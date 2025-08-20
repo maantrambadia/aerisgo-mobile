@@ -1,8 +1,11 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname, router } from "expo-router";
 import SafeScreen from "../components/SafeScreen";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import "../global.css";
+import BottomNav from "../components/BottomNav";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,13 +37,86 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  const pathname = usePathname();
+  const { showNav, activeKey } = useMemo(() => {
+    const map = {
+      "/home": "home",
+      "/tickets": "tickets",
+      "/search": "search",
+      "/profile": "profile",
+    };
+    const key = map[pathname] || null;
+    return { showNav: Boolean(key), activeKey: key };
+  }, [pathname]);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
     <SafeScreen>
-      <Stack screenOptions={{ headerShown: false }} />
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "none",
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true,
+        }}
+      >
+        {/* Welcome */}
+        <Stack.Screen
+          name="index"
+          options={{ animation: "slide_from_right" }}
+        />
+        {/* Home */}
+        <Stack.Screen
+          name="home"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        {/* Auth */}
+        <Stack.Screen
+          name="(auth)/sign-up"
+          options={{
+            animation: "fade_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="(auth)/sign-in"
+          options={{
+            animation: "fade_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="(auth)/forgot-password"
+          options={{
+            animation: "fade_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="(auth)/verify-otp"
+          options={{
+            animation: "fade_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="(auth)/reset-password"
+          options={{
+            animation: "fade_from_bottom",
+          }}
+        />
+      </Stack>
+      {showNav ? (
+        <BottomNav
+          active={activeKey}
+          onPressItem={(key) => {
+            if (key === "home") router.replace("/home");
+            if (key === "tickets") router.replace("/tickets");
+            if (key === "search") router.replace("/search");
+            if (key === "profile") router.replace("/profile");
+          }}
+        />
+      ) : null}
     </SafeScreen>
   );
 }
