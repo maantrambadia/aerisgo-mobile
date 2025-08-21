@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
 import PrimaryButton from "../components/PrimaryButton";
+import { router } from "expo-router";
 
 export default function Home() {
   const [tripType, setTripType] = useState("oneway"); // oneway | roundtrip
@@ -85,7 +86,7 @@ export default function Home() {
         {/* Top row: avatar + greeting+name + bell */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
-            <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center">
+            <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15">
               <Text className="text-primary font-urbanist-semibold text-xl">
                 👨🏻
               </Text>
@@ -99,7 +100,7 @@ export default function Home() {
               </Text>
             </View>
           </View>
-          <TouchableOpacity className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center">
+          <TouchableOpacity className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15">
             <Ionicons name="notifications-outline" size={22} color="#541424" />
           </TouchableOpacity>
         </View>
@@ -287,7 +288,10 @@ export default function Home() {
               try {
                 await Haptics.selectionAsync();
               } catch {}
-              // TODO: navigate to results
+              router.push({
+                pathname: "/search-results",
+                params: { from, to, date, passengers, tripType },
+              });
             }}
             withHaptics
             hapticStyle="medium"

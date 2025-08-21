@@ -54,7 +54,7 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeScreen>
+    <SafeScreen disableBottom={pathname === "/search-results"}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
@@ -73,6 +73,11 @@ export default function RootLayout() {
         <Stack.Screen
           name="home"
           options={{ animation: "none", gestureEnabled: false }}
+        />
+        {/* Search Results */}
+        <Stack.Screen
+          name="search-results"
+          options={{ animation: "slide_from_right" }}
         />
         {/* Auth */}
         <Stack.Screen
