@@ -64,7 +64,7 @@ export default function Welcome() {
               entering={ZoomIn.duration(700).delay(350).springify()}
               className="relative w-10/12 z-20"
             >
-              <View className="rotate-[-2deg]">
+              <View className="rotate-[2deg]">
                 <TicketPreview variant="boarding" />
               </View>
             </Animated.View>

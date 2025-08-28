@@ -16,12 +16,15 @@ import { Ionicons } from "@expo/vector-icons";
 import FormInput from "../../components/FormInput";
 import PrimaryButton from "../../components/PrimaryButton";
 import welcomeLogo from "../../assets/images/welcome-logo.png";
+import { resetPassword as apiResetPassword } from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 export default function ResetPassword() {
-  const { email = "" } = useLocalSearchParams();
+  const { email = "", resetToken } = useLocalSearchParams();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const maskedEmail = useMemo(() => {
     if (typeof email !== "string" || !email.includes("@"))
@@ -49,11 +52,33 @@ export default function ResetPassword() {
       setError("Passwords do not match");
       return;
     }
+    if (!resetToken) {
+      toast.warn({
+        title: "Missing token",
+        message: "Start from Forgot Password again",
+      });
+      router.replace("/forgot-password");
+      return;
+    }
+    setLoading(true);
     try {
-      await Haptics.selectionAsync();
-    } catch {}
-    // TODO: call reset password API with email + new password
-    router.replace("/sign-in");
+      await apiResetPassword({ resetToken: String(resetToken), password });
+      try {
+        await Haptics.selectionAsync();
+      } catch {}
+      toast.success({
+        title: "Password updated",
+        message: "You can now sign in",
+      });
+      router.replace("/sign-in");
+    } catch (e) {
+      toast.error({
+        title: "Update failed",
+        message: e?.message || "Invalid or expired token",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,6 +176,7 @@ export default function ResetPassword() {
               className="w-full"
               withHaptics
               hapticStyle="medium"
+              disabled={loading}
             />
           </Animated.View>
         </ScrollView>

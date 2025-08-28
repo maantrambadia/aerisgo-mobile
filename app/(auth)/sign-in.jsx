@@ -16,15 +16,48 @@ import { Ionicons } from "@expo/vector-icons";
 import FormInput from "../../components/FormInput";
 import PrimaryButton from "../../components/PrimaryButton";
 import welcomeLogo from "../../assets/images/welcome-logo.png";
+import { signInApp as apiSignInApp } from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = () => {
-    if (!email || !password) return;
-    // TODO: call auth API
-    router.replace("/home");
+  const onSubmit = async () => {
+    if (!email || !password) {
+      toast.warn({
+        title: "Missing fields",
+        message: "Enter your email and password",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiSignInApp({ email, password, remember: true });
+      try {
+        await Haptics.selectionAsync();
+      } catch {}
+      toast.success({ title: "Signed in", message: "Welcome back!" });
+      router.replace("/home");
+    } catch (e) {
+      const msg = e?.message || "Sign in failed";
+      // If not verified, route to OTP verify
+      if (e?.status === 403 && msg.includes("Only verified passengers")) {
+        toast.info({
+          title: "Verify your email",
+          message: "Please enter the code we sent to your inbox",
+        });
+        router.push({
+          pathname: "/verify-otp",
+          params: { email, next: "/sign-in" },
+        });
+      } else {
+        toast.error({ title: "Sign in failed", message: msg });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -131,6 +164,7 @@ export default function SignIn() {
               className="w-full"
               withHaptics
               hapticStyle="medium"
+              disabled={loading}
             />
             <View className="items-center mt-4">
               <Text className="text-primary font-urbanist-medium">

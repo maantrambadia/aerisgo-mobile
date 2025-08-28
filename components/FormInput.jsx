@@ -17,6 +17,8 @@ const FormInput = ({
   onFocus,
   returnKeyType,
   onSubmitEditing,
+  prefix,
+  maxLength,
 }) => {
   const [hidden, setHidden] = useState(secureTextEntry);
   const handleFocus = async (e) => {
@@ -34,7 +36,21 @@ const FormInput = ({
         </Text>
       ) : null}
 
-      <View className="flex-row items-center bg-secondary rounded-2xl px-4 py-3 border border-primary/20">
+      <View
+        className={`flex-row items-center rounded-2xl px-4 py-3 border ${
+          error
+            ? "border-red-400 bg-secondary"
+            : "bg-secondary border-primary/20"
+        }`}
+      >
+        {prefix ? (
+          <Text
+            accessibilityElementsHidden
+            className="text-primary font-urbanist mr-2"
+          >
+            {prefix}
+          </Text>
+        ) : null}
         <TextInput
           className="flex-1 text-primary font-urbanist"
           placeholder={placeholder}
@@ -48,7 +64,16 @@ const FormInput = ({
           onFocus={handleFocus}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          maxLength={maxLength}
         />
+        {error ? (
+          <Ionicons
+            name="alert-circle"
+            size={18}
+            color="#b91c1c"
+            style={{ marginLeft: 8 }}
+          />
+        ) : null}
         {secureTextEntry ? (
           <TouchableOpacity
             onPress={async () => {
@@ -61,14 +86,19 @@ const FormInput = ({
             <Ionicons
               name={hidden ? "eye-off" : "eye"}
               size={20}
-              color="#541424"
+              color={error ? "#b91c1c" : "#541424"}
             />
           </TouchableOpacity>
         ) : null}
       </View>
 
       {error ? (
-        <Text className="text-red-600 mt-2 font-urbanist-medium">{error}</Text>
+        <View className="flex-row items-center mt-1">
+          <Ionicons name="alert-circle" size={14} color="#ef4444" />
+          <Text className="text-red-500 ml-1 font-urbanist-medium text-[12px]">
+            {error}
+          </Text>
+        </View>
       ) : null}
     </View>
   );

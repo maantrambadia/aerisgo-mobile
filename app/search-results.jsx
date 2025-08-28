@@ -1,5 +1,13 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -10,6 +18,8 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { searchFlightsApi } from "../lib/flights";
+import { toast } from "../lib/toast";
 
 // Micro-interaction: press-scale wrapper used across header buttons and chips
 const ScaleOnPress = ({ children, className = "", onPress, ...rest }) => {
@@ -40,6 +50,8 @@ const Chip = ({
   active = false,
   onPress,
   variant = "default",
+  disabled = false,
+  disabledMessage,
 }) => {
   const isPrimary = active || variant === "primary";
   const isGhost = variant === "ghost";
@@ -51,6 +63,33 @@ const Chip = ({
         ? "bg-primary/10 border-primary/20"
         : "bg-secondary border-primary/15");
   const tint = isPrimary ? "#e3d7cb" : "#541424";
+  if (disabled) {
+    // Still allow press to show a toast, but visually disabled
+    return (
+      <Pressable
+        onPress={() => {
+          if (disabledMessage) {
+            toast.warn({ title: "Unavailable", message: disabledMessage });
+          }
+        }}
+        className={containerCls + " opacity-50"}
+        style={{ width: 140 }}
+      >
+        <View className="flex-row items-center justify-center gap-2">
+          {icon ? <Ionicons name={icon} size={18} color={tint} /> : null}
+          <Text
+            numberOfLines={1}
+            className={
+              (isPrimary ? "text-text " : "text-primary/90 ") +
+              "font-urbanist-medium text-sm"
+            }
+          >
+            {label}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
   return (
     <ScaleOnPress
       onPress={onPress}
@@ -78,7 +117,7 @@ const RoutePill = ({ from, to }) => {
   const fromShort = String(from).split(",")[0].trim();
   const toShort = String(to).split(",")[0].trim();
   return (
-    <View className="rounded-full bg-secondary/60 px-4 py-2 flex-row items-center gap-2">
+    <View className="rounded-full bg-secondary/60 px-4 py-2 flex-row items-center gap-2 border border-primary/10">
       <Ionicons
         name="airplane"
         size={16}
@@ -106,14 +145,17 @@ const Notch = ({ side = "left" }) => (
 );
 
 const TicketResultCard = ({
-  fromCity = "Dhaka",
-  toCity = "Ottawa",
+  fromCity = "From",
+  toCity = "To",
   departTime = "12:30",
   arriveTime = "11:30",
-  duration = "20h 20m",
-  airline = "Emirates",
-  price = "$1270",
+  duration = "--",
+  priceInr = 0,
 }) => {
+  const priceText = useMemo(
+    () => `₹ ${Number(priceInr || 0).toLocaleString("en-IN")}`,
+    [priceInr]
+  );
   return (
     <View className="relative mt-4">
       <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
@@ -177,10 +219,10 @@ const TicketResultCard = ({
 
         {/* Bottom brand/price bar */}
         <View className="flex-row items-center justify-between mt-4">
-          <Text className="text-text font-urbanist-bold text-2xl">
-            {airline}
+          <Text className="text-text font-urbanist-bold text-2xl">AerisGo</Text>
+          <Text className="text-text font-urbanist-bold text-xl">
+            {priceText}
           </Text>
-          <Text className="text-text font-urbanist-bold text-xl">{price}</Text>
         </View>
       </View>
 
@@ -193,95 +235,67 @@ const TicketResultCard = ({
 
 export default function SearchResults() {
   const params = useLocalSearchParams();
-  const { from = "Dhaka", to = "Ottawa" } = params;
+  const { from = "", to = "", date = "", passengers = "1" } = params;
   const insets = useSafeAreaInsets();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [flights, setFlights] = useState([]);
 
-  const flights = [
-    {
-      airline: "Emirates",
-      price: "$1270",
-      departTime: "12:30",
-      arriveTime: "11:30",
-      duration: "20h 20m",
-    },
-    {
-      airline: "Qatar",
-      price: "$1370",
-      departTime: "13:30",
-      arriveTime: "08:50",
-      duration: "19h 20m",
-    },
-    {
-      airline: "Etihad",
-      price: "$1290",
-      departTime: "16:15",
-      arriveTime: "06:10",
-      duration: "15h 55m",
-    },
-    {
-      airline: "Lufthansa",
-      price: "$1210",
-      departTime: "18:45",
-      arriveTime: "10:35",
-      duration: "17h 50m",
-    },
-    {
-      airline: "Air India",
-      price: "$990",
-      departTime: "06:15",
-      arriveTime: "20:40",
-      duration: "18h 25m",
-    },
-    {
-      airline: "United",
-      price: "$1410",
-      departTime: "21:05",
-      arriveTime: "12:10",
-      duration: "19h 05m",
-    },
-    {
-      airline: "Turkish",
-      price: "$1190",
-      departTime: "23:10",
-      arriveTime: "13:20",
-      duration: "18h 10m",
-    },
-    {
-      airline: "Singapore",
-      price: "$1490",
-      departTime: "01:30",
-      arriveTime: "18:05",
-      duration: "20h 35m",
-    },
-    {
-      airline: "British",
-      price: "$1310",
-      departTime: "09:10",
-      arriveTime: "04:15",
-      duration: "21h 05m",
-    },
-    {
-      airline: "KLM",
-      price: "$1280",
-      departTime: "11:20",
-      arriveTime: "05:55",
-      duration: "18h 35m",
-    },
-    {
-      airline: "Emirates",
-      price: "$1260",
-      departTime: "07:45",
-      arriveTime: "03:25",
-      duration: "19h 40m",
-    },
-    {
-      airline: "Qatar",
-      price: "$1320",
-      departTime: "14:20",
-      arriveTime: "09:15",
-      duration: "18h 55m",
-    },
-  ];
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await searchFlightsApi({
+          source: from,
+          destination: to,
+          date,
+          passengers: Number(passengers || 1),
+        });
+        if (!mounted) return;
+        setFlights(Array.isArray(res?.flights) ? res.flights : []);
+      } catch (e) {
+        if (!mounted) return;
+        setError(e?.message || "Failed to fetch flights");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [from, to, date, passengers]);
+
+  const countText = useMemo(() => {
+    const n = flights.length;
+    return `${n} ${n === 1 ? "Flight" : "Flights"}`;
+  }, [flights.length]);
+
+  function fmtTime(t) {
+    try {
+      const d = new Date(t);
+      return d.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "--:--";
+    }
+  }
+
+  function fmtDuration(a, b) {
+    try {
+      const start = new Date(a).getTime();
+      const end = new Date(b).getTime();
+      const diff = Math.max(0, end - start) / 60000; // mins
+      const h = Math.floor(diff / 60);
+      const m = Math.round(diff % 60);
+      return `${h}h ${m}m`;
+    } catch {
+      return "--";
+    }
+  }
 
   return (
     <View className="flex-1 bg-background">
@@ -291,7 +305,7 @@ export default function SearchResults() {
         className="px-6 pt-6"
       >
         <View className="flex-row items-center justify-between">
-          <ScaleOnPress
+          <TouchableOpacity
             accessibilityLabel="Go back"
             className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
             onPress={async () => {
@@ -302,11 +316,12 @@ export default function SearchResults() {
             }}
           >
             <Ionicons name="chevron-back" size={22} color="#541424" />
-          </ScaleOnPress>
+          </TouchableOpacity>
           <Text className="text-primary font-urbanist-semibold text-lg">
             Search Result
           </Text>
-          <ScaleOnPress
+
+          <TouchableOpacity
             className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
             onPress={async () => {
               try {
@@ -315,7 +330,7 @@ export default function SearchResults() {
             }}
           >
             <Ionicons name="notifications-outline" size={22} color="#541424" />
-          </ScaleOnPress>
+          </TouchableOpacity>
         </View>
       </Animated.View>
 
@@ -327,7 +342,7 @@ export default function SearchResults() {
         <View className="flex-row items-start justify-between">
           <View style={{ maxWidth: "60%" }}>
             <Text className="text-primary font-urbanist-bold text-3xl leading-9">
-              251 Flight
+              {countText}
             </Text>
             <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
               Available
@@ -344,7 +359,13 @@ export default function SearchResults() {
       >
         <View className="flex-row items-center gap-3">
           <Chip label="Economy" variant="primary" />
-          <Chip label="Modify" icon="options-outline" variant="ghost" />
+          <Chip
+            label="Modify"
+            icon="options-outline"
+            variant="ghost"
+            disabled
+            disabledMessage="Modify is currently disabled. This feature will be available soon."
+          />
         </View>
       </Animated.View>
 
@@ -358,24 +379,38 @@ export default function SearchResults() {
           contentInsetAdjustmentBehavior="never"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
-          {flights.map((f, i) => (
-            <Animated.View
-              key={i}
-              entering={FadeInUp.duration(600)
-                .delay(200 + i * 60)
-                .springify()}
-            >
-              <TicketResultCard
-                fromCity={from}
-                toCity={to}
-                departTime={f.departTime}
-                arriveTime={f.arriveTime}
-                duration={f.duration}
-                airline={f.airline}
-                price={f.price}
-              />
-            </Animated.View>
-          ))}
+          {loading ? (
+            <View className="mt-8 items-center justify-center">
+              <ActivityIndicator color="#541424" />
+              <Text className="text-primary/70 mt-3">Searching flights...</Text>
+            </View>
+          ) : error ? (
+            <View className="mt-8 items-center justify-center">
+              <Text className="text-primary text-center px-6">{error}</Text>
+            </View>
+          ) : flights.length === 0 ? (
+            <View className="mt-8 items-center justify-center">
+              <Text className="text-primary/80">No flights found</Text>
+            </View>
+          ) : (
+            flights.map((f, i) => (
+              <Animated.View
+                key={i}
+                entering={FadeInUp.duration(600)
+                  .delay(200 + i * 60)
+                  .springify()}
+              >
+                <TicketResultCard
+                  fromCity={from}
+                  toCity={to}
+                  departTime={fmtTime(f.departureTime)}
+                  arriveTime={fmtTime(f.arrivalTime)}
+                  duration={fmtDuration(f.departureTime, f.arrivalTime)}
+                  priceInr={f.baseFare}
+                />
+              </Animated.View>
+            ))
+          )}
         </ScrollView>
       </Animated.View>
     </View>

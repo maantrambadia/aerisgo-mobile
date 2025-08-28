@@ -16,14 +16,52 @@ import { Ionicons } from "@expo/vector-icons";
 import FormInput from "../../components/FormInput";
 import PrimaryButton from "../../components/PrimaryButton";
 import welcomeLogo from "../../assets/images/welcome-logo.png";
+import { requestPasswordReset as apiRequestPasswordReset } from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = () => {
-    if (!email) return;
-    // TODO: trigger send OTP API (using email)
-    router.push({ pathname: "/verify-otp", params: { email } });
+  const onSubmit = async () => {
+    const emailStr = String(email || "").trim();
+    if (!emailStr) {
+      toast.warn({
+        title: "Missing email",
+        message: "Please enter your email address",
+      });
+      return;
+    }
+    const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailStr);
+    if (!emailValid) {
+      toast.warn({
+        title: "Invalid email",
+        message: "Enter a valid email address",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiRequestPasswordReset({ email: emailStr });
+      try {
+        await Haptics.selectionAsync();
+      } catch {}
+      toast.success({
+        title: "Code sent",
+        message: `We sent a 6-digit code to ${emailStr}`,
+      });
+      router.push({
+        pathname: "/verify-otp",
+        params: { email: emailStr, mode: "password_reset" },
+      });
+    } catch (e) {
+      toast.error({
+        title: "Request failed",
+        message: e?.message || "Please try again",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -109,6 +147,7 @@ export default function ForgotPassword() {
               className="w-full"
               withHaptics
               hapticStyle="medium"
+              disabled={loading}
             />
             <View className="items-center mt-4">
               <Text className="text-primary font-urbanist-medium">

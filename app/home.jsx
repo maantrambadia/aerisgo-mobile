@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   BackHandler,
   StatusBar,
   Pressable,
+  Image,
+  Modal,
+  ScrollView,
 } from "react-native";
 import Animated, {
   FadeInDown,
@@ -19,14 +22,42 @@ import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
 import PrimaryButton from "../components/PrimaryButton";
 import { router } from "expo-router";
+import { getUserProfile } from "../lib/storage";
+import { toast } from "../lib/toast";
 
 export default function Home() {
-  const [tripType, setTripType] = useState("oneway"); // oneway | roundtrip
+  const [tripType, setTripType] = useState("oneway"); // roundtrip disabled
   const [from, setFrom] = useState("Rajkot, India");
   const [to, setTo] = useState("Mumbai, India");
-  const [date, setDate] = useState("25 Aug 25");
-  const [passengers, setPassengers] = useState("1 Adult, 0 Child");
-  const userName = "Maan Trambadia";
+  const [travelDate, setTravelDate] = useState(new Date());
+  const [pax, setPax] = useState({ adults: 1, children: 0 });
+
+  const [showFromModal, setShowFromModal] = useState(false);
+  const [showToModal, setShowToModal] = useState(false);
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [showPaxModal, setShowPaxModal] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const p = await getUserProfile();
+        if (mounted) setUser(p);
+      } catch {}
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const displayName = user?.name || "Traveler";
+  const avatarSource = useMemo(() => {
+    const g = (user?.gender || "other").toLowerCase();
+    if (g === "male") return require("../assets/images/male.png");
+    if (g === "female") return require("../assets/images/female.png");
+    return null; // other -> show '?'
+  }, [user?.gender]);
   const greeting = useMemo(() => {
     const h = new Date().getHours();
     if (h < 12) return "Good morning";
@@ -34,11 +65,54 @@ export default function Home() {
     return "Good evening";
   }, []);
 
+  // Today at 00:00 for date comparisons
+  const todayMidnight = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return t;
+  }, []);
+  const isPrevDisabled = useMemo(() => {
+    const t = new Date(travelDate);
+    t.setHours(0, 0, 0, 0);
+    return t.getTime() <= todayMidnight.getTime();
+  }, [travelDate, todayMidnight]);
+
+  // Quick date helpers
+  const setDateToday = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setTravelDate(d);
+  };
+  const setDateTomorrow = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0);
+    setTravelDate(d);
+  };
+  const setDateWeekend = () => {
+    const d = new Date();
+    // 6 = Saturday, 0 = Sunday
+    const day = d.getDay();
+    const toAdd = day === 6 ? 0 : day === 0 ? 6 : 6 - day;
+    d.setDate(d.getDate() + toAdd);
+    d.setHours(0, 0, 0, 0);
+    setTravelDate(d);
+  };
+
+  // Removed search filtering for From/To modals as per request
+
   const onChangeTrip = async (type) => {
     try {
       await Haptics.selectionAsync();
     } catch {}
-    setTripType(type);
+    if (type === "roundtrip") {
+      toast.warn({
+        title: "Round Trip disabled",
+        message: "Currently only One way is supported",
+      });
+      return;
+    }
+    setTripType("oneway");
   };
 
   // Prevent navigating back from Home (Android hardware back)
@@ -85,18 +159,26 @@ export default function Home() {
         <StatusBar barStyle="dark-content" backgroundColor="#e3d0bf" />
         {/* Top row: avatar + greeting+name + bell */}
         <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center flex-1">
-            <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15">
-              <Text className="text-primary font-urbanist-semibold text-xl">
-                👨🏻
-              </Text>
+          <View className="flex-row items-center">
+            <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15 overflow-hidden">
+              {avatarSource ? (
+                <Image
+                  source={avatarSource}
+                  resizeMode="cover"
+                  className="w-14 h-[55px] rounded-full mt-3 p-1"
+                />
+              ) : (
+                <Text className="text-primary font-urbanist-bold text-xl">
+                  ?
+                </Text>
+              )}
             </View>
             <View className="ml-3">
               <Text className="text-primary/80 font-urbanist-medium text-lg">
                 {greeting}
               </Text>
               <Text className="text-primary font-urbanist-bold text-2xl mt-0.5">
-                {userName} 👋
+                {displayName} 👋
               </Text>
             </View>
           </View>
@@ -117,7 +199,7 @@ export default function Home() {
           </Text>
         </View>
 
-        {/* Trip type radio row (One way / Round Trip) */}
+        {/* Trip type radio row (One way / Round Trip - Round Trip disabled) */}
         <View className="flex-row items-center gap-8 mt-2">
           <TouchableOpacity
             onPress={() => onChangeTrip("oneway")}
@@ -135,14 +217,10 @@ export default function Home() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onChangeTrip("roundtrip")}
-            activeOpacity={0.8}
-            className="flex-row items-center"
+            activeOpacity={0.6}
+            className="flex-row items-center opacity-50"
           >
-            <Ionicons
-              name={tripType === "roundtrip" ? "ellipse" : "ellipse-outline"}
-              size={26}
-              color="#541424"
-            />
+            <Ionicons name={"ellipse-outline"} size={26} color="#541424" />
             <Text className="text-primary ml-2 font-urbanist-medium text-lg">
               Round Trip
             </Text>
@@ -182,6 +260,7 @@ export default function Home() {
                 try {
                   await Haptics.selectionAsync();
                 } catch {}
+                setShowFromModal(true);
               }}
             >
               <View className="flex-row items-center">
@@ -205,6 +284,7 @@ export default function Home() {
                 try {
                   await Haptics.selectionAsync();
                 } catch {}
+                setShowToModal(true);
               }}
             >
               <View className="flex-row items-center">
@@ -228,6 +308,7 @@ export default function Home() {
                 try {
                   await Haptics.selectionAsync();
                 } catch {}
+                setShowDateModal(true);
               }}
             >
               <View className="flex-row items-center">
@@ -239,7 +320,12 @@ export default function Home() {
                     Date
                   </Text>
                   <Text className="text-secondary font-urbanist-medium mt-1">
-                    {date}
+                    {new Date(travelDate).toLocaleDateString(undefined, {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "short",
+                      year: "2-digit",
+                    })}
                   </Text>
                 </View>
               </View>
@@ -251,6 +337,7 @@ export default function Home() {
                 try {
                   await Haptics.selectionAsync();
                 } catch {}
+                setShowPaxModal(true);
               }}
             >
               <View className="flex-row items-center">
@@ -262,7 +349,7 @@ export default function Home() {
                     Passenger
                   </Text>
                   <Text className="text-secondary font-urbanist-medium mt-1">
-                    {passengers}
+                    {`${pax.adults} Adult${pax.adults > 1 ? "s" : ""}, ${pax.children} Child${pax.children !== 1 ? "ren" : ""}`}
                   </Text>
                 </View>
               </View>
@@ -288,9 +375,43 @@ export default function Home() {
               try {
                 await Haptics.selectionAsync();
               } catch {}
+              const src = String(from || "").trim();
+              const dst = String(to || "").trim();
+              if (!src || !dst) {
+                toast.warn({
+                  title: "Route required",
+                  message: "Please select From and To",
+                });
+                return;
+              }
+              if (src.toLowerCase() === dst.toLowerCase()) {
+                toast.warn({
+                  title: "Invalid route",
+                  message: "From and To must be different",
+                });
+                return;
+              }
+              const today = new Date();
+              const tDate = new Date(travelDate);
+              tDate.setHours(0, 0, 0, 0);
+              today.setHours(0, 0, 0, 0);
+              if (tDate < today) {
+                toast.warn({
+                  title: "Invalid date",
+                  message: "Travel date cannot be in the past",
+                });
+                return;
+              }
+              const iso = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, "0")}-${String(tDate.getDate()).padStart(2, "0")}`;
               router.push({
                 pathname: "/search-results",
-                params: { from, to, date, passengers, tripType },
+                params: {
+                  from: src,
+                  to: dst,
+                  date: iso,
+                  passengers: String(pax.adults + pax.children),
+                  tripType,
+                },
               });
             }}
             withHaptics
@@ -298,6 +419,350 @@ export default function Home() {
           />
         </View>
       </Animated.View>
+
+      {/* Location modal - From */}
+      <Modal
+        visible={showFromModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFromModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/30">
+          <Animated.View
+            entering={FadeInUp.duration(250).springify()}
+            className="bg-background rounded-t-3xl p-6"
+          >
+            {/* Handle + header */}
+            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-primary font-urbanist-bold text-xl">
+                Select origin
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowFromModal(false)}
+                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+              >
+                <Ionicons name="close" size={18} color="#541424" />
+              </TouchableOpacity>
+            </View>
+            {/* Popular */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mt-3"
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {POPULAR_CITIES.map((c) => (
+                <ScaleOnPress
+                  key={`pop-from-${c}`}
+                  className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                  onPress={() => {
+                    setFrom(c);
+                    setShowFromModal(false);
+                  }}
+                >
+                  <Text className="text-primary text-xs font-urbanist-medium">
+                    {c}
+                  </Text>
+                </ScaleOnPress>
+              ))}
+            </ScrollView>
+            {/* Results */}
+            <ScrollView style={{ maxHeight: 320 }} className="mt-3">
+              {CITY_OPTIONS.map((c) => (
+                <ScaleOnPress
+                  key={`from-${c}`}
+                  className="py-4 border-b border-primary/10"
+                  onPress={() => {
+                    setFrom(c);
+                    setShowFromModal(false);
+                  }}
+                >
+                  <Text className="text-primary font-urbanist-medium">{c}</Text>
+                </ScaleOnPress>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Location modal - To */}
+      <Modal
+        visible={showToModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowToModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/30">
+          <Animated.View
+            entering={FadeInUp.duration(250).springify()}
+            className="bg-background rounded-t-3xl p-6"
+          >
+            {/* Handle + header */}
+            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-primary font-urbanist-bold text-xl">
+                Select destination
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowToModal(false)}
+                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+              >
+                <Ionicons name="close" size={18} color="#541424" />
+              </TouchableOpacity>
+            </View>
+            {/* Popular */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mt-3"
+              contentContainerStyle={{ gap: 8 }}
+            >
+              {POPULAR_CITIES.map((c) => (
+                <ScaleOnPress
+                  key={`pop-to-${c}`}
+                  className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                  onPress={() => {
+                    setTo(c);
+                    setShowToModal(false);
+                  }}
+                >
+                  <Text className="text-primary text-xs font-urbanist-medium">
+                    {c}
+                  </Text>
+                </ScaleOnPress>
+              ))}
+            </ScrollView>
+            {/* Results */}
+            <ScrollView style={{ maxHeight: 320 }} className="mt-3">
+              {CITY_OPTIONS.map((c) => (
+                <ScaleOnPress
+                  key={`to-${c}`}
+                  className="py-4 border-b border-primary/10"
+                  onPress={() => {
+                    setTo(c);
+                    setShowToModal(false);
+                  }}
+                >
+                  <Text className="text-primary font-urbanist-medium">{c}</Text>
+                </ScaleOnPress>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Date modal */}
+      <Modal
+        visible={showDateModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDateModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/30">
+          <Animated.View
+            entering={FadeInUp.duration(250).springify()}
+            className="bg-background rounded-t-3xl p-6"
+          >
+            {/* Handle + header */}
+            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-primary font-urbanist-bold text-xl">
+                Select date
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowDateModal(false)}
+                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+              >
+                <Ionicons name="close" size={18} color="#541424" />
+              </TouchableOpacity>
+            </View>
+            {/* Quick picks */}
+            <View className="flex-row items-center gap-2 mt-1">
+              <ScaleOnPress
+                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                onPress={setDateToday}
+              >
+                <Text className="text-primary text-xs font-urbanist-medium">
+                  Today
+                </Text>
+              </ScaleOnPress>
+              <ScaleOnPress
+                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                onPress={setDateTomorrow}
+              >
+                <Text className="text-primary text-xs font-urbanist-medium">
+                  Tomorrow
+                </Text>
+              </ScaleOnPress>
+              <ScaleOnPress
+                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                onPress={setDateWeekend}
+              >
+                <Text className="text-primary text-xs font-urbanist-medium">
+                  Weekend
+                </Text>
+              </ScaleOnPress>
+            </View>
+            <View className="flex-row items-center justify-between py-4">
+              <TouchableOpacity
+                disabled={isPrevDisabled}
+                className="px-4 py-3 rounded-full bg-primary/10"
+                style={{ opacity: isPrevDisabled ? 0.4 : 1 }}
+                onPress={() => {
+                  if (isPrevDisabled) return;
+                  setTravelDate((d) => {
+                    const nd = new Date(d);
+                    nd.setDate(nd.getDate() - 1);
+                    return nd;
+                  });
+                }}
+              >
+                <Ionicons name="chevron-back" size={20} color="#541424" />
+              </TouchableOpacity>
+              <Text
+                className="text-primary font-urbanist-bold text-lg"
+                numberOfLines={2}
+              >
+                {new Date(travelDate).toLocaleDateString(undefined, {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </Text>
+              <TouchableOpacity
+                className="px-4 py-3 rounded-full bg-primary/10"
+                onPress={() =>
+                  setTravelDate((d) => {
+                    const nd = new Date(d);
+                    nd.setDate(nd.getDate() + 1);
+                    return nd;
+                  })
+                }
+              >
+                <Ionicons name="chevron-forward" size={20} color="#541424" />
+              </TouchableOpacity>
+            </View>
+            <PrimaryButton
+              title="Done"
+              className="mt-2"
+              onPress={() => setShowDateModal(false)}
+            />
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Passenger modal */}
+      <Modal
+        visible={showPaxModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPaxModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/30">
+          <Animated.View
+            entering={FadeInUp.duration(250).springify()}
+            className="bg-background rounded-t-3xl p-6"
+          >
+            {/* Handle + header */}
+            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-primary font-urbanist-bold text-xl">
+                Passengers
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowPaxModal(false)}
+                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+              >
+                <Ionicons name="close" size={18} color="#541424" />
+              </TouchableOpacity>
+            </View>
+            <Text className="text-primary/70 mb-2">
+              Select the number of travelers
+            </Text>
+            <View className="flex-row items-center justify-between py-3">
+              <Text className="text-primary font-urbanist-medium text-lg">
+                Adults
+              </Text>
+              <View className="flex-row items-center gap-4">
+                <TouchableOpacity
+                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+                  onPress={() =>
+                    setPax((p) => ({ ...p, adults: Math.max(1, p.adults - 1) }))
+                  }
+                >
+                  <Ionicons name="remove" size={20} color="#541424" />
+                </TouchableOpacity>
+                <Text className="text-primary font-urbanist-bold text-lg">
+                  {pax.adults}
+                </Text>
+                <TouchableOpacity
+                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+                  onPress={() =>
+                    setPax((p) => ({ ...p, adults: p.adults + 1 }))
+                  }
+                >
+                  <Ionicons name="add" size={20} color="#541424" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View className="flex-row items-center justify-between py-3">
+              <Text className="text-primary font-urbanist-medium text-lg">
+                Children
+              </Text>
+              <View className="flex-row items-center gap-4">
+                <TouchableOpacity
+                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+                  onPress={() =>
+                    setPax((p) => ({
+                      ...p,
+                      children: Math.max(0, p.children - 1),
+                    }))
+                  }
+                >
+                  <Ionicons name="remove" size={20} color="#541424" />
+                </TouchableOpacity>
+                <Text className="text-primary font-urbanist-bold text-lg">
+                  {pax.children}
+                </Text>
+                <TouchableOpacity
+                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+                  onPress={() =>
+                    setPax((p) => ({ ...p, children: p.children + 1 }))
+                  }
+                >
+                  <Ionicons name="add" size={20} color="#541424" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <PrimaryButton
+              title="Done"
+              className="mt-2"
+              onPress={() => setShowPaxModal(false)}
+            />
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const CITY_OPTIONS = [
+  "Rajkot, India",
+  "Mumbai, India",
+  "Ahmedabad, India",
+  "Delhi, India",
+  "Bengaluru, India",
+  "Hyderabad, India",
+  "Chennai, India",
+  "Kolkata, India",
+];
+
+// Subset for quick access chips
+const POPULAR_CITIES = [
+  "Mumbai, India",
+  "Delhi, India",
+  "Bengaluru, India",
+  "Hyderabad, India",
+];

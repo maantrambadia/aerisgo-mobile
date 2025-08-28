@@ -16,12 +16,21 @@ import { Ionicons } from "@expo/vector-icons";
 
 import PrimaryButton from "../../components/PrimaryButton";
 import welcomeLogo from "../../assets/images/welcome-logo.png";
+import {
+  verifyEmail as apiVerifyEmail,
+  resendOtp as apiResendOtp,
+  verifyPasswordReset as apiVerifyPasswordReset,
+  resendPasswordResetOtp as apiResendPasswordResetOtp,
+} from "../../lib/auth";
+import { toast } from "../../lib/toast";
 
 export default function VerifyOtp() {
-  const { email = "", next } = useLocalSearchParams();
+  const { email = "", next, mode } = useLocalSearchParams();
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [seconds, setSeconds] = useState(30);
   const inputsRef = useRef(Array.from({ length: 6 }, () => null));
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const maskedEmail = useMemo(() => {
     if (typeof email !== "string" || !email.includes("@"))
@@ -43,23 +52,88 @@ export default function VerifyOtp() {
     return () => clearTimeout(t);
   }, [seconds]);
 
-  const onVerify = () => {
-    if (code.length !== 6) return; // simple client-side check
-    const dest = typeof next === "string" && next ? next : "/reset-password";
-    if (dest === "/reset-password") {
-      router.push({ pathname: dest, params: { email: String(email) } });
-    } else {
-      router.push(dest);
+  const onVerify = async () => {
+    const emailStr = String(email || "");
+    if (!emailStr) {
+      toast.warn({ title: "Missing email", message: "Go back and try again" });
+      return;
+    }
+    if (code.length !== 6) {
+      toast.warn({
+        title: "Incomplete code",
+        message: "Enter the 6-digit OTP",
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      if (mode === "password_reset") {
+        const { data } = await apiVerifyPasswordReset({
+          email: emailStr,
+          code,
+        });
+        const resetToken = data?.resetToken;
+        if (!resetToken) throw new Error("Missing reset token");
+        try {
+          await Haptics.selectionAsync();
+        } catch {}
+        toast.success({
+          title: "Code verified",
+          message: "Set your new password",
+        });
+        router.replace({
+          pathname: "/reset-password",
+          params: { email: emailStr, resetToken },
+        });
+      } else {
+        await apiVerifyEmail({ email: emailStr, code });
+        try {
+          await Haptics.selectionAsync();
+        } catch {}
+        toast.success({
+          title: "Email verified",
+          message: "You can now sign in",
+        });
+        const dest = typeof next === "string" && next ? next : "/sign-in";
+        router.replace(dest);
+      }
+    } catch (e) {
+      toast.error({
+        title: "Verification failed",
+        message: e?.message || "Invalid or expired code",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const onResend = async () => {
     if (seconds > 0) return;
+    const emailStr = String(email || "");
+    if (!emailStr) return;
+    setResending(true);
     try {
-      await Haptics.selectionAsync();
-    } catch {}
-    // TODO: call resend OTP API using email
-    setSeconds(30);
+      if (mode === "password_reset") {
+        await apiResendPasswordResetOtp({ email: emailStr });
+      } else {
+        await apiResendOtp({ email: emailStr });
+      }
+      try {
+        await Haptics.selectionAsync();
+      } catch {}
+      setSeconds(30);
+      toast.info({
+        title: "OTP resent",
+        message: `We sent a new code to ${maskedEmail}`,
+      });
+    } catch (e) {
+      toast.error({
+        title: "Resend failed",
+        message: e?.message || "Please try again",
+      });
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -196,6 +270,7 @@ export default function VerifyOtp() {
               className="w-full"
               withHaptics
               hapticStyle="medium"
+              disabled={loading}
             />
           </Animated.View>
         </ScrollView>

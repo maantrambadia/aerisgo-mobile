@@ -12,6 +12,7 @@ const PrimaryButton = ({
   leftIconName,
   leftIconColor = "#e3d7cb",
   leftIconSize = 18,
+  disabled = false,
 }) => {
   const triggerHaptic = async () => {
     try {
@@ -39,11 +40,14 @@ const PrimaryButton = ({
   return (
     <TouchableOpacity
       onPress={async () => {
+        if (disabled) return;
         await triggerHaptic();
         onPress && onPress();
       }}
       activeOpacity={0.8}
-      className={`${variantContainer} ${containerBase} ${className}`}
+      disabled={disabled}
+      accessibilityState={{ disabled }}
+      className={`${variantContainer} ${containerBase} ${disabled ? "opacity-50" : ""} ${className}`}
     >
       {leftIconName ? (
         <Ionicons
