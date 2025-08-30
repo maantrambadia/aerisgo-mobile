@@ -9,6 +9,7 @@ import {
   Image,
   Modal,
   ScrollView,
+  Platform,
 } from "react-native";
 import Animated, {
   FadeInDown,
@@ -19,11 +20,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import PrimaryButton from "../components/PrimaryButton";
 import { router } from "expo-router";
 import { getUserProfile } from "../lib/storage";
 import { toast } from "../lib/toast";
+import { COLORS } from "../constants/colors";
 
 export default function Home() {
   const [tripType, setTripType] = useState("oneway"); // roundtrip disabled
@@ -35,6 +38,7 @@ export default function Home() {
   const [showFromModal, setShowFromModal] = useState(false);
   const [showToModal, setShowToModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
+  const [showNativePicker, setShowNativePicker] = useState(false);
   const [showPaxModal, setShowPaxModal] = useState(false);
   const [user, setUser] = useState(null);
 
@@ -571,7 +575,10 @@ export default function Home() {
                 Select date
               </Text>
               <TouchableOpacity
-                onPress={() => setShowDateModal(false)}
+                onPress={() => {
+                  setShowNativePicker(false);
+                  setShowDateModal(false);
+                }}
                 className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
               >
                 <Ionicons name="close" size={18} color="#541424" />
@@ -603,7 +610,43 @@ export default function Home() {
                   Weekend
                 </Text>
               </ScaleOnPress>
+              <ScaleOnPress
+                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                onPress={async () => {
+                  try {
+                    await Haptics.selectionAsync();
+                  } catch {}
+                  setShowNativePicker(true);
+                }}
+              >
+                <Text className="text-primary text-xs font-urbanist-medium">
+                  Custom date
+                </Text>
+              </ScaleOnPress>
             </View>
+            {showNativePicker ? (
+              <View className="mt-2">
+                <DateTimePicker
+                  value={travelDate}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  minimumDate={todayMidnight}
+                  themeVariant={Platform.OS === "ios" ? "light" : undefined}
+                  textColor={Platform.OS === "ios" ? COLORS.primary : undefined}
+                  accentColor={COLORS.primary}
+                  onChange={(event, selectedDate) => {
+                    if (Platform.OS === "android") {
+                      setShowNativePicker(false);
+                    }
+                    if (selectedDate) {
+                      const d = new Date(selectedDate);
+                      d.setHours(0, 0, 0, 0);
+                      setTravelDate(d);
+                    }
+                  }}
+                />
+              </View>
+            ) : null}
             <View className="flex-row items-center justify-between py-4">
               <TouchableOpacity
                 disabled={isPrevDisabled}
@@ -647,7 +690,10 @@ export default function Home() {
             <PrimaryButton
               title="Done"
               className="mt-2"
-              onPress={() => setShowDateModal(false)}
+              onPress={() => {
+                setShowNativePicker(false);
+                setShowDateModal(false);
+              }}
             />
           </Animated.View>
         </View>
