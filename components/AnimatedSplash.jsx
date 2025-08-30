@@ -11,6 +11,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { COLORS } from "../constants/colors";
 
+const SPLASH_VISIBLE_MS = 1600; // time before fade-out starts
+const FADE_OUT_MS = 240; // fade duration
+const PLANE_COUNT = 6; // 3 original + 3 more airplanes
+
 // Reusable plane that flies horizontally with gentle Y wobble and pulsing contrail
 function FlyByPlane({
   visible,
@@ -108,15 +112,21 @@ export default function AnimatedSplash({ visible, onFinish }) {
   // Precompute randomized plane configs once per mount
   const planeConfigsRef = useRef(null);
   if (!planeConfigsRef.current) {
-    planeConfigsRef.current = [0, 1, 2].map((i) => {
-      const size = i === 0 ? 56 : i === 1 ? 40 : 28;
-      const trail = i === 0 ? 80 : i === 1 ? 60 : 40;
-      const topPct = 30 + Math.random() * 28; // 30% - 58%
-      const delayMs = i * 90 + Math.floor(Math.random() * 60);
-      const planeOpacityBase = i === 0 ? 0.85 : i === 1 ? 0.75 : 0.55;
-      // Compute duration so each plane finishes before overlay fade (~900ms)
-      const totalWindow = 880;
-      const durationMs = Math.max(520, totalWindow - delayMs);
+    const sizes = [56, 48, 40, 34, 28, 24];
+    const trails = [90, 80, 70, 60, 50, 40];
+    const opacities = [0.85, 0.8, 0.75, 0.7, 0.6, 0.55];
+    planeConfigsRef.current = Array.from({ length: PLANE_COUNT }, (_, i) => {
+      const size = sizes[i % sizes.length];
+      const trail = trails[i % trails.length];
+      const baseTop = 24 + i * 7; // distribute from ~24% to ~59%
+      const jitter = Math.random() * 4 - 2; // -2% .. +2%
+      const topPct = baseTop + jitter;
+      const delayMs = i * 180 + Math.floor(Math.random() * 120);
+      const planeOpacityBase = opacities[i % opacities.length];
+      // Ensure each plane finishes before overlay fade (uses extended window)
+      const totalWindow = SPLASH_VISIBLE_MS - 80;
+      const available = Math.max(400, totalWindow - delayMs);
+      const durationMs = Math.max(520, Math.min(available, 1400)); // slower, but guaranteed to finish
       return { size, trail, topPct, delayMs, durationMs, planeOpacityBase };
     });
   }
@@ -147,23 +157,23 @@ export default function AnimatedSplash({ visible, onFinish }) {
 
     // (shimmer removed)
 
-    // Progress bar sweep
-    bar.value = withSequence(
-      withTiming(100, { duration: 850, easing: Easing.out(Easing.cubic) }),
-      withDelay(120, withTiming(100, { duration: 50 }))
-    );
+    // Progress bar sweep (match extended splash window)
+    bar.value = withTiming(100, {
+      duration: SPLASH_VISIBLE_MS - 120,
+      easing: Easing.out(Easing.cubic),
+    });
 
     // (airplanes handled by FlyByPlane components)
 
-    // Finish after minimal premium feel duration with fade-out
+    // Finish after extended duration with fade-out
     let t2;
     const t1 = setTimeout(() => {
       opacity.value = withTiming(0, {
-        duration: 200,
+        duration: FADE_OUT_MS,
         easing: Easing.inOut(Easing.cubic),
       });
-      t2 = setTimeout(() => onFinish?.(), 210);
-    }, 900);
+      t2 = setTimeout(() => onFinish?.(), FADE_OUT_MS + 10);
+    }, SPLASH_VISIBLE_MS);
 
     return () => {
       clearTimeout(t1);
