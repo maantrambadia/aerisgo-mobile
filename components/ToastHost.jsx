@@ -54,8 +54,15 @@ export default function ToastHost() {
       if (evt.kind === "show" && evt.toast) {
         const t = evt.toast;
         setItems((prev) => {
-          const next = [...prev, t].slice(-4); // cap at 4 toasts
-          return next;
+          // Clear timers for any existing toasts since we only allow one
+          prev.forEach((p) => {
+            const h = timers.current.get(p.id);
+            if (h) {
+              clearTimeout(h);
+              timers.current.delete(p.id);
+            }
+          });
+          return [t]; // keep only the latest toast
         });
         if (t.haptics) {
           const style = hapticForType(t.type);
