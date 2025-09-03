@@ -23,7 +23,6 @@ export default function ResetPassword() {
   const { email = "", resetToken } = useLocalSearchParams();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const maskedEmail = useMemo(() => {
@@ -39,17 +38,25 @@ export default function ResetPassword() {
   }, [email]);
 
   const onSubmit = async () => {
-    setError("");
     if (!password || !confirm) {
-      setError("Please fill both fields");
+      toast.warn({
+        title: "Missing fields",
+        message: "Please fill both fields",
+      });
       return;
     }
     if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+      toast.warn({
+        title: "Weak password",
+        message: "Password must be at least 8 characters",
+      });
       return;
     }
     if (password !== confirm) {
-      setError("Passwords do not match");
+      toast.warn({
+        title: "Passwords do not match",
+        message: "Re-enter the same password",
+      });
       return;
     }
     if (!resetToken) {
@@ -158,11 +165,7 @@ export default function ResetPassword() {
               autoComplete="password-new"
               returnKeyType="done"
               onSubmitEditing={onSubmit}
-              error={error}
             />
-            {error ? (
-              <Text className="text-red-600 font-urbanist-medium">{error}</Text>
-            ) : null}
           </Animated.View>
 
           {/* Actions */}

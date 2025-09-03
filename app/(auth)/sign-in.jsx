@@ -25,16 +25,26 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async () => {
-    if (!email || !password) {
+    const em = String(email || "").trim();
+    const pw = String(password || "");
+
+    if (!em || !pw) {
       toast.warn({
         title: "Missing fields",
         message: "Enter your email and password",
       });
       return;
     }
+
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em);
+    if (!emailValid) {
+      toast.warn({ title: "Invalid email", message: "Enter a valid email" });
+      return;
+    }
+
     setLoading(true);
     try {
-      await apiSignInApp({ email, password, remember: true });
+      await apiSignInApp({ email: em, password: pw, remember: true });
       try {
         await Haptics.selectionAsync();
       } catch {}
@@ -123,7 +133,10 @@ export default function SignIn() {
               label="Email"
               placeholder="you@example.com"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(t) => {
+                const v = t.replace(/\s+/g, "");
+                setEmail(v);
+              }}
               keyboardType="email-address"
               autoComplete="email"
               returnKeyType="next"
@@ -132,7 +145,9 @@ export default function SignIn() {
               label="Password"
               placeholder="Enter password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(t) => {
+                setPassword(t);
+              }}
               secureTextEntry
               autoComplete="password"
               returnKeyType="done"

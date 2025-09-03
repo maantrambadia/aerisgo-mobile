@@ -212,7 +212,8 @@ export default function VerifyOtp() {
                       for (let k = 0; k < 6 - i; k++) {
                         next[i + k] = cleaned[k] || "";
                       }
-                      setDigits(next.map((x) => x.slice(0, 1)));
+                      const clipped = next.map((x) => x.slice(0, 1));
+                      setDigits(clipped);
                       const lastIndex = Math.min(i + cleaned.length, 5);
                       inputsRef.current[lastIndex]?.focus?.();
                       return;

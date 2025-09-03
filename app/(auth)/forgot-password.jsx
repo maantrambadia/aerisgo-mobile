@@ -32,12 +32,9 @@ export default function ForgotPassword() {
       });
       return;
     }
-    const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailStr);
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailStr);
     if (!emailValid) {
-      toast.warn({
-        title: "Invalid email",
-        message: "Enter a valid email address",
-      });
+      toast.warn({ title: "Invalid email", message: "Enter a valid email" });
       return;
     }
     setLoading(true);
@@ -128,7 +125,10 @@ export default function ForgotPassword() {
               label="Email"
               placeholder="you@example.com"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(t) => {
+                const v = t.replace(/\s+/g, "");
+                setEmail(v);
+              }}
               keyboardType="email-address"
               autoComplete="email"
               returnKeyType="done"

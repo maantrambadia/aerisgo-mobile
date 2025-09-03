@@ -27,15 +27,7 @@ export default function SignUp() {
   const [confirm, setConfirm] = useState("");
   const [gender, setGender] = useState("other");
   const [loading, setLoading] = useState(false);
-  const [nameError, setNameError] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [phoneError, setPhoneError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [confirmError, setConfirmError] = useState("");
 
-  // Helpers
-  // Live formatter: keep letters/spaces, title-case words, collapse multiple spaces,
-  // and PRESERVE a single trailing space so user can type the next word.
   const formatNameLive = (raw) => {
     const src = String(raw || "");
     const onlyLetters = src.replace(/[^a-zA-Z\s]/g, "");
@@ -71,13 +63,6 @@ export default function SignUp() {
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(v);
 
   const onSubmit = async () => {
-    // Reset errors
-    setNameError("");
-    setEmailError("");
-    setPhoneError("");
-    setPasswordError("");
-    setConfirmError("");
-
     // Validate
     const nm = formatName(name);
     const em = email.trim();
@@ -88,32 +73,42 @@ export default function SignUp() {
         title: "Missing fields",
         message: "Please fill all fields",
       });
-      if (!nm) setNameError("Full Name is required");
-      if (!em) setEmailError("Email is required");
-      if (!ph) setPhoneError("Phone is required");
-      if (!password) setPasswordError("Password is required");
-      if (!confirm) setConfirmError("Confirm your password");
       return;
     }
 
     if (!isValidName(nm)) {
-      setNameError("Only letters and spaces allowed");
+      toast.warn({
+        title: "Invalid name",
+        message: "Only letters and spaces allowed",
+      });
       return;
     }
     if (!isValidEmail(em)) {
-      setEmailError("Enter a valid email address");
+      toast.warn({
+        title: "Invalid email",
+        message: "Enter a valid email address",
+      });
       return;
     }
     if (!isValidPhone(ph)) {
-      setPhoneError("Enter 10-digit phone number");
+      toast.warn({
+        title: "Invalid phone",
+        message: "Enter 10-digit phone number",
+      });
       return;
     }
     if (!isStrongPassword(password)) {
-      setPasswordError("Min 8 chars with upper, lower, number and symbol");
+      toast.warn({
+        title: "Weak password",
+        message: "Min 8 chars with upper, lower, number and symbol",
+      });
       return;
     }
     if (password !== confirm) {
-      setConfirmError("Passwords do not match");
+      toast.warn({
+        title: "Passwords do not match",
+        message: "Re-enter the same password",
+      });
       return;
     }
 
@@ -215,15 +210,10 @@ export default function SignUp() {
               onChangeText={(t) => {
                 const v = formatNameLive(t);
                 setName(v);
-                const vTrim = v.trim();
-                if (vTrim && !isValidName(vTrim))
-                  setNameError("Only letters and spaces allowed");
-                else setNameError("");
               }}
               autoCapitalize="words"
               autoComplete="name"
               returnKeyType="next"
-              error={nameError}
             />
             <FormInput
               label="Email"
@@ -232,14 +222,10 @@ export default function SignUp() {
               onChangeText={(t) => {
                 const v = t.replace(/\s+/g, "");
                 setEmail(v);
-                if (v && !isValidEmail(v))
-                  setEmailError("Invalid email format");
-                else setEmailError("");
               }}
               keyboardType="email-address"
               autoComplete="email"
               returnKeyType="next"
-              error={emailError}
             />
             <FormInput
               label="Phone"
@@ -248,17 +234,12 @@ export default function SignUp() {
               onChangeText={(t) => {
                 const digits = (t || "").replace(/\D/g, "").slice(0, 10);
                 setPhone(digits);
-                if (digits.length === 10) setPhoneError("");
-                else if (digits.length > 0)
-                  setPhoneError("Enter 10-digit phone number");
-                else setPhoneError("");
               }}
               keyboardType="phone-pad"
               autoComplete="tel"
               returnKeyType="next"
               prefix="+91"
               maxLength={10}
-              error={phoneError}
             />
             {/* Gender selector */}
             <View className="mt-1">
@@ -343,19 +324,10 @@ export default function SignUp() {
               value={password}
               onChangeText={(t) => {
                 setPassword(t);
-                if (t && !isStrongPassword(t))
-                  setPasswordError(
-                    "Min 8 chars with upper, lower, number and symbol"
-                  );
-                else setPasswordError("");
-                if (confirm && t !== confirm)
-                  setConfirmError("Passwords do not match");
-                else if (confirm) setConfirmError("");
               }}
               secureTextEntry
               autoComplete="password-new"
               returnKeyType="next"
-              error={passwordError}
             />
             <FormInput
               label="Confirm Password"
@@ -363,15 +335,11 @@ export default function SignUp() {
               value={confirm}
               onChangeText={(t) => {
                 setConfirm(t);
-                if (password && t && password !== t)
-                  setConfirmError("Passwords do not match");
-                else setConfirmError("");
               }}
               secureTextEntry
               autoComplete="password-new"
               returnKeyType="done"
               onSubmitEditing={onSubmit}
-              error={confirmError}
             />
           </Animated.View>
 
