@@ -121,7 +121,7 @@ const TicketPreview = ({
           {airline}
         </Text>
         <Text className="text-primary/60 font-urbanist-medium text-xs">
-          EFA12345
+          {flightNo}
         </Text>
       </View>
 
