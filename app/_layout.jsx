@@ -150,31 +150,31 @@ export default function RootLayout() {
         <Stack.Screen
           name="(auth)/sign-up"
           options={{
-            animation: "fade_from_bottom",
+            animation: "none",
           }}
         />
         <Stack.Screen
           name="(auth)/sign-in"
           options={{
-            animation: "fade_from_bottom",
+            animation: "none",
           }}
         />
         <Stack.Screen
           name="(auth)/forgot-password"
           options={{
-            animation: "fade_from_bottom",
+            animation: "none",
           }}
         />
         <Stack.Screen
           name="(auth)/verify-otp"
           options={{
-            animation: "fade_from_bottom",
+            animation: "none",
           }}
         />
         <Stack.Screen
           name="(auth)/reset-password"
           options={{
-            animation: "fade_from_bottom",
+            animation: "none",
           }}
         />
       </Stack>
