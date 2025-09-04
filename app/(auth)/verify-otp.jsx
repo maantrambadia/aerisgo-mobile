@@ -140,7 +140,9 @@ export default function VerifyOtp() {
   // Auto-send OTP on first arrival when explicitly requested (e.g., after sign-in rejects with not_verified)
   useEffect(() => {
     const emailStr = String(email || "").trim();
-    const shouldAuto = String(autoResend || "").toLowerCase() === "1" || String(autoResend || "").toLowerCase() === "true";
+    const shouldAuto =
+      String(autoResend || "").toLowerCase() === "1" ||
+      String(autoResend || "").toLowerCase() === "true";
     if (autoTriggered || !emailStr) return;
     if (mode === "password_reset") return; // do not auto-send for reset flow
     if (!shouldAuto) return;
