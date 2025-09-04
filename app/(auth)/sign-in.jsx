@@ -52,16 +52,26 @@ export default function SignIn() {
       router.replace("/home");
     } catch (e) {
       const msg = e?.message || "Sign in failed";
-      // If not verified, route to OTP verify
-      if (e?.status === 403 && msg.includes("Only verified passengers")) {
-        toast.info({
-          title: "Verify your email",
-          message: "Please enter the code we sent to your inbox",
-        });
-        router.push({
-          pathname: "/verify-otp",
-          params: { email, next: "/sign-in" },
-        });
+      if (e?.status === 403) {
+        const reason = e?.data?.reason;
+        if (reason === "not_verified") {
+          toast.info({
+            title: "Verify your email",
+            message: "Please enter the code we sent to your inbox",
+          });
+          router.push({
+            pathname: "/verify-otp",
+            params: { email: em, next: "/sign-in", autoResend: "1" },
+          });
+        } else if (reason === "not_passenger") {
+          toast.error({
+            title: "Sign-in not allowed",
+            message:
+              "Only verified passengers can sign in to the app. If you're staff/admin, please use the web portal.",
+          });
+        } else {
+          toast.error({ title: "Sign in failed", message: msg });
+        }
       } else {
         toast.error({ title: "Sign in failed", message: msg });
       }

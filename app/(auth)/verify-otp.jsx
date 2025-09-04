@@ -25,12 +25,13 @@ import {
 import { toast } from "../../lib/toast";
 
 export default function VerifyOtp() {
-  const { email = "", next, mode } = useLocalSearchParams();
+  const { email = "", next, mode, autoResend } = useLocalSearchParams();
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [seconds, setSeconds] = useState(30);
   const inputsRef = useRef(Array.from({ length: 6 }, () => null));
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [autoTriggered, setAutoTriggered] = useState(false);
 
   const maskedEmail = useMemo(() => {
     if (typeof email !== "string" || !email.includes("@"))
@@ -135,6 +136,46 @@ export default function VerifyOtp() {
       setResending(false);
     }
   };
+
+  // Auto-send OTP on first arrival when explicitly requested (e.g., after sign-in rejects with not_verified)
+  useEffect(() => {
+    const emailStr = String(email || "").trim();
+    const shouldAuto = String(autoResend || "").toLowerCase() === "1" || String(autoResend || "").toLowerCase() === "true";
+    if (autoTriggered || !emailStr) return;
+    if (mode === "password_reset") return; // do not auto-send for reset flow
+    if (!shouldAuto) return;
+
+    let cancelled = false;
+    (async () => {
+      setResending(true);
+      try {
+        await apiResendOtp({ email: emailStr });
+        if (!cancelled) {
+          setSeconds(30);
+          toast.info({
+            title: "OTP sent",
+            message: `We sent a verification code to ${maskedEmail}`,
+          });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          toast.error({
+            title: "Send failed",
+            message: e?.message || "Please try again",
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setResending(false);
+          setAutoTriggered(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoResend, email, maskedEmail, mode, autoTriggered]);
 
   return (
     <View className="flex-1 bg-background">
