@@ -93,10 +93,9 @@ export default function VerifyOtp() {
         } catch {}
         toast.success({
           title: "Email verified",
-          message: "You can now sign in",
+          message: "Welcome! Taking you to Home",
         });
-        const dest = typeof next === "string" && next ? next : "/sign-in";
-        router.replace(dest);
+        router.replace("/home");
       }
     } catch (e) {
       toast.error({
