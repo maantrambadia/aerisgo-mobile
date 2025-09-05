@@ -25,6 +25,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import PrimaryButton from "../components/PrimaryButton";
 import { router } from "expo-router";
 import { getUserProfile } from "../lib/storage";
+import { fetchMe } from "../lib/auth";
 import { toast } from "../lib/toast";
 import { COLORS } from "../constants/colors";
 
@@ -150,6 +151,24 @@ export default function Home() {
         onBackPress
       );
       return () => sub.remove();
+    }, [])
+  );
+
+  // Refresh user from server on focus so updates (e.g., gender) reflect immediately
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          const fresh = await fetchMe();
+          if (active && fresh) setUser(fresh);
+        } catch {
+          // ignore errors; keep cached user
+        }
+      })();
+      return () => {
+        active = false;
+      };
     }, [])
   );
 

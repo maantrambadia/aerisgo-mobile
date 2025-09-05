@@ -3,7 +3,7 @@ import { View, Text, BackHandler } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import PrimaryButton from "../components/PrimaryButton";
 import { getUserProfile } from "../lib/storage";
-import { signOut } from "../lib/auth";
+import { signOut, fetchMe } from "../lib/auth";
 import { router } from "expo-router";
 import { toast } from "../lib/toast";
 import { useFocusEffect } from "@react-navigation/native";
@@ -27,6 +27,24 @@ export default function Profile() {
         onBackPress
       );
       return () => sub.remove();
+    }, [])
+  );
+
+  // Refresh user from server on focus so updates (e.g., gender) reflect immediately
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          const fresh = await fetchMe();
+          if (active && fresh) setUser(fresh);
+        } catch {
+          // ignore network/auth errors; keep cached user
+        }
+      })();
+      return () => {
+        active = false;
+      };
     }, [])
   );
 
