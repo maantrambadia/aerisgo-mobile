@@ -1,0 +1,146 @@
+import { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import FormInput from "../components/FormInput";
+import PrimaryButton from "../components/PrimaryButton";
+import { changePassword } from "../lib/profile";
+import { toast } from "../lib/toast";
+
+export default function ChangePassword() {
+  const [loading, setLoading] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleChangePassword = async () => {
+    try {
+      if (!currentPassword.trim()) {
+        toast.error({
+          title: "Error",
+          message: "Current password is required",
+        });
+        return;
+      }
+      if (!newPassword.trim()) {
+        toast.error({ title: "Error", message: "New password is required" });
+        return;
+      }
+      if (newPassword.length < 6) {
+        toast.error({
+          title: "Error",
+          message: "Password must be at least 6 characters",
+        });
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        toast.error({ title: "Error", message: "Passwords do not match" });
+        return;
+      }
+
+      setLoading(true);
+      await changePassword({
+        currentPassword: currentPassword.trim(),
+        newPassword: newPassword.trim(),
+      });
+
+      toast.success({
+        title: "Success",
+        message: "Password changed successfully",
+      });
+      router.back();
+    } catch (error) {
+      toast.error({
+        title: "Change Failed",
+        message: error?.message || "Failed to change password",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-background">
+      {/* Header */}
+      <Animated.View
+        entering={FadeInDown.duration(500).springify()}
+        className="px-6 pt-6 pb-4 bg-background flex-row items-center"
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center mr-3"
+        >
+          <Ionicons name="arrow-back" size={20} color="#541424" />
+        </TouchableOpacity>
+        <View className="flex-1">
+          <Text className="text-primary font-urbanist-bold text-2xl">
+            Change Password
+          </Text>
+        </View>
+      </Animated.View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        <View className="px-6 mt-4">
+          <Animated.View
+            entering={FadeInDown.duration(400).delay(100).springify()}
+          >
+            <FormInput
+              label="Current Password"
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              leftIconName="lock-closed-outline"
+              secureTextEntry
+            />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.duration(400).delay(150).springify()}
+            className="mt-4"
+          >
+            <FormInput
+              label="New Password"
+              placeholder="Enter new password"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              leftIconName="lock-closed-outline"
+              secureTextEntry
+            />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.duration(400).delay(200).springify()}
+            className="mt-4"
+          >
+            <FormInput
+              label="Confirm New Password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              leftIconName="lock-closed-outline"
+              secureTextEntry
+            />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.duration(400).delay(250).springify()}
+            className="mt-8"
+          >
+            <PrimaryButton
+              title={loading ? "Changing..." : "Change Password"}
+              onPress={handleChangePassword}
+              disabled={loading}
+              withHaptics
+              hapticStyle="medium"
+              className="w-full"
+            />
+          </Animated.View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}

@@ -285,10 +285,7 @@ export default function Profile() {
                 try {
                   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 } catch {}
-                toast.info({
-                  title: "Coming Soon",
-                  message: "Profile editing will be available soon",
-                });
+                router.push("/edit-profile");
               }}
             />
             <ProfileCard
@@ -300,77 +297,29 @@ export default function Profile() {
                 try {
                   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 } catch {}
-                toast.info({
-                  title: "Coming Soon",
-                  message: "Password change will be available soon",
-                });
+                router.push("/change-password");
               }}
             />
             <ProfileCard
-              icon="notifications-outline"
-              title="Notifications"
-              subtitle="Manage notification preferences"
+              icon="document-text-outline"
+              title="User Documents"
+              subtitle="Manage Aadhar and Passport"
               delay={350}
               onPress={async () => {
                 try {
                   await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 } catch {}
-                toast.info({
-                  title: "Coming Soon",
-                  message: "Notification settings will be available soon",
-                });
+                router.push("/user-documents");
               }}
             />
           </View>
         </View>
 
-        {/* User Support & FAQs */}
+        {/* FAQs Section */}
         <View className="px-6 mb-6">
           <Animated.Text
             entering={FadeInDown.duration(400).delay(400).springify()}
             className="text-primary font-urbanist-bold text-xl mb-3"
-          >
-            User Support & FAQs
-          </Animated.Text>
-
-          {/* Support Cards */}
-          <View className="gap-3 mb-4">
-            <ProfileCard
-              icon="help-circle-outline"
-              title="Help Center"
-              subtitle="Get answers to common questions"
-              delay={450}
-              onPress={async () => {
-                try {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                } catch {}
-                toast.info({
-                  title: "Help Center",
-                  message: "Visit support.aerisgo.com for assistance",
-                });
-              }}
-            />
-            <ProfileCard
-              icon="chatbubble-ellipses-outline"
-              title="Contact Support"
-              subtitle="Reach out to our support team"
-              delay={500}
-              onPress={async () => {
-                try {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                } catch {}
-                toast.info({
-                  title: "Contact Support",
-                  message: "Email: support@aerisgo.com",
-                });
-              }}
-            />
-          </View>
-
-          {/* FAQs */}
-          <Animated.Text
-            entering={FadeInDown.duration(400).delay(550).springify()}
-            className="text-primary font-urbanist-semibold text-lg mb-3 mt-2"
           >
             Frequently Asked Questions
           </Animated.Text>
@@ -379,7 +328,7 @@ export default function Profile() {
               key={idx}
               question={faq.question}
               answer={faq.answer}
-              delay={600 + idx * 50}
+              delay={450 + idx * 50}
             />
           ))}
         </View>

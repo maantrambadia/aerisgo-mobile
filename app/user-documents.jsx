@@ -1,0 +1,263 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+} from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
+import FormInput from "../components/FormInput";
+import PrimaryButton from "../components/PrimaryButton";
+import { getDocuments, upsertDocument, deleteDocument } from "../lib/profile";
+import { toast } from "../lib/toast";
+
+export default function UserDocuments() {
+  const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingType, setEditingType] = useState(null);
+  const [documentNumber, setDocumentNumber] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      const result = await getDocuments();
+      setDocuments(result.documents || []);
+    } catch (error) {
+      toast.error({
+        title: "Error",
+        message: "Failed to load documents",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDocuments();
+    }, [])
+  );
+
+  const openAddEdit = (type) => {
+    const existing = documents.find((d) => d.documentType === type);
+    setEditingType(type);
+    setDocumentNumber(existing?.documentNumber || "");
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    try {
+      if (!documentNumber.trim()) {
+        toast.error({ title: "Error", message: "Document number is required" });
+        return;
+      }
+
+      setSaving(true);
+      await upsertDocument({
+        documentType: editingType,
+        documentNumber: documentNumber.trim(),
+      });
+
+      toast.success({
+        title: "Success",
+        message: "Document saved successfully",
+      });
+      setShowModal(false);
+      loadDocuments();
+    } catch (error) {
+      toast.error({
+        title: "Save Failed",
+        message: error?.message || "Failed to save document",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (type) => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await deleteDocument(type);
+      toast.success({
+        title: "Success",
+        message: "Document deleted successfully",
+      });
+      loadDocuments();
+    } catch (error) {
+      toast.error({
+        title: "Delete Failed",
+        message: error?.message || "Failed to delete document",
+      });
+    }
+  };
+
+  const getDocumentIcon = (type) => {
+    if (type === "aadhar") return "card-outline";
+    if (type === "passport") return "airplane-outline";
+    return "document-outline";
+  };
+
+  const getDocumentLabel = (type) => {
+    if (type === "aadhar") return "Aadhar Card";
+    if (type === "passport") return "Passport";
+    return type;
+  };
+
+  return (
+    <View className="flex-1 bg-background">
+      {/* Header */}
+      <Animated.View
+        entering={FadeInDown.duration(500).springify()}
+        className="px-6 pt-6 pb-4 bg-background flex-row items-center"
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center mr-3"
+        >
+          <Ionicons name="arrow-back" size={20} color="#541424" />
+        </TouchableOpacity>
+        <View className="flex-1">
+          <Text className="text-primary font-urbanist-bold text-2xl">
+            User Documents
+          </Text>
+        </View>
+      </Animated.View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        <View className="px-6 mt-4">
+          {loading ? (
+            <View className="py-10 items-center">
+              <ActivityIndicator size="large" color="#541424" />
+            </View>
+          ) : (
+            <>
+              {["aadhar", "passport"].map((type, idx) => {
+                const doc = documents.find((d) => d.documentType === type);
+                return (
+                  <Animated.View
+                    key={type}
+                    entering={FadeInDown.duration(400)
+                      .delay(100 + idx * 50)
+                      .springify()}
+                    className="mb-4"
+                  >
+                    <View className="bg-secondary/40 border border-primary/10 rounded-[28px] p-4">
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center flex-1">
+                          <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center">
+                            <Ionicons
+                              name={getDocumentIcon(type)}
+                              size={22}
+                              color="#541424"
+                            />
+                          </View>
+                          <View className="ml-4 flex-1">
+                            <Text className="text-primary font-urbanist-semibold text-base">
+                              {getDocumentLabel(type)}
+                            </Text>
+                            {doc ? (
+                              <Text className="text-primary/60 font-urbanist text-sm mt-0.5">
+                                {doc.documentNumber}
+                              </Text>
+                            ) : (
+                              <Text className="text-primary/40 font-urbanist text-sm mt-0.5">
+                                Not added
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                        <View className="flex-row gap-2">
+                          <TouchableOpacity
+                            onPress={() => openAddEdit(type)}
+                            className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+                          >
+                            <Ionicons
+                              name={doc ? "create-outline" : "add"}
+                              size={18}
+                              color="#541424"
+                            />
+                          </TouchableOpacity>
+                          {doc && (
+                            <TouchableOpacity
+                              onPress={() => handleDelete(type)}
+                              className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+                            >
+                              <Ionicons
+                                name="trash-outline"
+                                size={18}
+                                color="#541424"
+                              />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </Animated.View>
+                );
+              })}
+            </>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Add/Edit Modal */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/30">
+          <Animated.View
+            entering={FadeInUp.duration(250).springify()}
+            className="bg-background rounded-t-3xl p-6"
+          >
+            {/* Handle */}
+            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-primary font-urbanist-bold text-xl">
+                {editingType ? getDocumentLabel(editingType) : "Document"}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowModal(false)}
+                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+              >
+                <Ionicons name="close" size={18} color="#541424" />
+              </TouchableOpacity>
+            </View>
+
+            <FormInput
+              label="Document Number"
+              placeholder="Enter document number"
+              value={documentNumber}
+              onChangeText={setDocumentNumber}
+              leftIconName="card-outline"
+            />
+
+            <View className="mt-4">
+              <PrimaryButton
+                title={saving ? "Saving..." : "Save Document"}
+                onPress={handleSave}
+                disabled={saving}
+                withHaptics
+                hapticStyle="medium"
+                className="w-full"
+              />
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
