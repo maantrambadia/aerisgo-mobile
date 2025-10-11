@@ -65,19 +65,23 @@ export default function ChangePassword() {
       {/* Header */}
       <Animated.View
         entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6 pb-4 bg-background flex-row items-center"
+        className="px-6 pt-6 pb-4 bg-background flex-row items-center justify-between"
       >
         <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center mr-3"
+          className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
+          onPress={async () => {
+            try {
+              await Haptics.selectionAsync();
+            } catch {}
+            router.back();
+          }}
         >
-          <Ionicons name="arrow-back" size={20} color="#541424" />
+          <Ionicons name="chevron-back" size={22} color="#541424" />
         </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-primary font-urbanist-bold text-2xl">
-            Change Password
-          </Text>
-        </View>
+        <Text className="text-primary font-urbanist-semibold text-lg">
+          Change Password
+        </Text>
+        <View className="w-14 h-14" />
       </Animated.View>
 
       <ScrollView

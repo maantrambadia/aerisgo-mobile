@@ -218,7 +218,7 @@ export default function Profile() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
         {/* Profile Picture & Info */}
         <Animated.View
@@ -336,7 +336,7 @@ export default function Profile() {
         {/* Sign Out Button */}
         <Animated.View
           entering={FadeInUp.duration(500).delay(800).springify()}
-          className="px-6 mt-4"
+          className="px-6 mt-4 mb-6"
         >
           <PrimaryButton
             title="Sign Out"
