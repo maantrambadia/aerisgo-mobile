@@ -1,12 +1,136 @@
-import { useEffect, useState, useCallback } from "react";
-import { View, Text, BackHandler } from "react-native";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  View,
+  Text,
+  BackHandler,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Pressable,
+} from "react-native";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  RotateInDownLeft,
+} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import PrimaryButton from "../components/PrimaryButton";
 import { getUserProfile } from "../lib/storage";
 import { signOut, fetchMe } from "../lib/auth";
 import { router } from "expo-router";
 import { toast } from "../lib/toast";
 import { useFocusEffect } from "@react-navigation/native";
+
+// Micro-interaction: Scale on press
+const ScalePress = ({ children, onPress, className = "" }) => {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Pressable
+      onPressIn={() => {
+        scale.value = withSpring(0.96, { damping: 15, stiffness: 250 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 250 });
+      }}
+      onPress={onPress}
+      className={className}
+    >
+      <Animated.View style={animatedStyle}>{children}</Animated.View>
+    </Pressable>
+  );
+};
+
+// Profile action card with icon
+const ProfileCard = ({ icon, title, subtitle, onPress, delay = 0 }) => (
+  <Animated.View
+    entering={FadeInDown.duration(400).delay(delay).springify()}
+  >
+    <ScalePress onPress={onPress}>
+      <View className="bg-secondary/40 border border-primary/10 rounded-2xl p-4 flex-row items-center justify-between">
+        <View className="flex-row items-center flex-1">
+          <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center">
+            <Ionicons name={icon} size={22} color="#541424" />
+          </View>
+          <View className="ml-4 flex-1">
+            <Text className="text-primary font-urbanist-semibold text-base">
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text className="text-primary/60 font-urbanist text-sm mt-0.5">
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#541424" />
+      </View>
+    </ScalePress>
+  </Animated.View>
+);
+
+// FAQ Item with expand/collapse animation
+const FAQItem = ({ question, answer, delay = 0 }) => {
+  const [expanded, setExpanded] = useState(false);
+  const rotation = useSharedValue(0);
+  const height = useSharedValue(0);
+
+  const rotationStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  const heightStyle = useAnimatedStyle(() => ({
+    height: height.value,
+    opacity: height.value > 0 ? 1 : 0,
+  }));
+
+  const toggle = async () => {
+    try {
+      await Haptics.selectionAsync();
+    } catch {}
+    setExpanded(!expanded);
+    rotation.value = withSpring(expanded ? 0 : 180, {
+      damping: 15,
+      stiffness: 200,
+    });
+    height.value = withTiming(expanded ? 0 : 100, { duration: 300 });
+  };
+
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(400).delay(delay).springify()}
+      className="mb-3"
+    >
+      <TouchableOpacity
+        onPress={toggle}
+        activeOpacity={0.7}
+        className="bg-secondary/40 border border-primary/10 rounded-2xl p-4"
+      >
+        <View className="flex-row items-center justify-between">
+          <Text className="text-primary font-urbanist-semibold text-base flex-1 pr-3">
+            {question}
+          </Text>
+          <Animated.View style={rotationStyle}>
+            <Ionicons name="chevron-down" size={20} color="#541424" />
+          </Animated.View>
+        </View>
+        <Animated.View style={heightStyle} className="overflow-hidden">
+          <Text className="text-primary/70 font-urbanist text-sm mt-3 leading-5">
+            {answer}
+          </Text>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -48,66 +172,247 @@ export default function Profile() {
     }, [])
   );
 
+  // Avatar logic (same as home.jsx)
+  const avatarSource = useMemo(() => {
+    const g = (user?.gender || "other").toLowerCase();
+    if (g === "male") return require("../assets/images/male.png");
+    if (g === "female") return require("../assets/images/female.png");
+    return null; // other -> show '?'
+  }, [user?.gender]);
+
+  const faqs = [
+    {
+      question: "How do I change my flight booking?",
+      answer:
+        "Contact our support team via the Help Center. Modifications depend on fare rules and availability.",
+    },
+    {
+      question: "What is the baggage allowance?",
+      answer:
+        "Economy: 15kg check-in + 7kg cabin. Business: 30kg check-in + 10kg cabin. Excess charges apply.",
+    },
+    {
+      question: "How do I check-in online?",
+      answer:
+        "Online check-in opens 48 hours before departure. Visit our website or use the app to check-in and get your boarding pass.",
+    },
+    {
+      question: "Can I cancel my booking?",
+      answer:
+        "Yes, cancellations are subject to fare rules. Refunds may take 7-10 business days to process.",
+    },
+  ];
+
   return (
     <View className="flex-1 bg-background">
-      <View className="px-6 pt-6">
-        <Text className="text-primary font-urbanist-bold text-3xl">
-          Profile
-        </Text>
-        <Text className="text-primary/70 font-urbanist mt-2">
-          Manage your account and settings.
-        </Text>
-      </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {/* Header */}
+        <Animated.View
+          entering={FadeInDown.duration(500).springify()}
+          className="px-6 pt-6 pb-4"
+        >
+          <Text className="text-primary font-urbanist-bold text-3xl">
+            Profile
+          </Text>
+          <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
+            Manage your account and preferences
+          </Text>
+        </Animated.View>
 
-      {/* User info */}
-      <View className="px-6 mt-6 gap-3">
-        <View className="flex-row items-center gap-3">
-          <View>
-            <Text className="text-primary font-urbanist-bold text-xl">
-              {user?.name || "—"}
+        {/* Profile Picture & Info */}
+        <Animated.View
+          entering={RotateInDownLeft.duration(600).delay(100).springify()}
+          className="mx-6 mb-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl p-6 border border-primary/15"
+        >
+          <View className="items-center">
+            {/* Avatar */}
+            <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center border-2 border-primary/20 overflow-hidden mb-4">
+              {avatarSource ? (
+                <Image
+                  source={avatarSource}
+                  resizeMode="cover"
+                  className="w-24 h-[93px] rounded-full mt-3"
+                />
+              ) : (
+                <Text className="text-primary font-urbanist-bold text-4xl">
+                  ?
+                </Text>
+              )}
+            </View>
+
+            {/* Name & Email */}
+            <Text className="text-primary font-urbanist-bold text-2xl text-center">
+              {user?.name || "Traveler"}
             </Text>
-            <Text className="text-primary/70 font-urbanist">
+            <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
               {user?.email || "—"}
             </Text>
+
+            {/* Info Pills */}
+            <View className="flex-row gap-3 mt-4">
+              <View className="bg-secondary/60 px-4 py-2 rounded-full flex-row items-center gap-2">
+                <Ionicons name="call" size={14} color="#541424" />
+                <Text className="text-primary font-urbanist-medium text-sm">
+                  {user?.phone || "—"}
+                </Text>
+              </View>
+              <View className="bg-secondary/60 px-4 py-2 rounded-full flex-row items-center gap-2">
+                <Ionicons name="person" size={14} color="#541424" />
+                <Text className="text-primary font-urbanist-medium text-sm capitalize">
+                  {user?.gender || "other"}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Profile Management Section */}
+        <View className="px-6 mb-6">
+          <Animated.Text
+            entering={FadeInDown.duration(400).delay(200).springify()}
+            className="text-primary font-urbanist-bold text-xl mb-3"
+          >
+            Profile Management
+          </Animated.Text>
+          <View className="gap-3">
+            <ProfileCard
+              icon="person-outline"
+              title="Edit Profile"
+              subtitle="Update your personal information"
+              delay={250}
+              onPress={async () => {
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch {}
+                toast.info({
+                  title: "Coming Soon",
+                  message: "Profile editing will be available soon",
+                });
+              }}
+            />
+            <ProfileCard
+              icon="lock-closed-outline"
+              title="Change Password"
+              subtitle="Update your account password"
+              delay={300}
+              onPress={async () => {
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch {}
+                toast.info({
+                  title: "Coming Soon",
+                  message: "Password change will be available soon",
+                });
+              }}
+            />
+            <ProfileCard
+              icon="notifications-outline"
+              title="Notifications"
+              subtitle="Manage notification preferences"
+              delay={350}
+              onPress={async () => {
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch {}
+                toast.info({
+                  title: "Coming Soon",
+                  message: "Notification settings will be available soon",
+                });
+              }}
+            />
           </View>
         </View>
-        <View className="flex-row items-center gap-2 mt-2">
-          <Ionicons name="call-outline" size={18} color="#541424" />
-          <Text className="text-primary/80 font-urbanist">
-            {user?.phone || "—"}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-2">
-          <Ionicons name="person-outline" size={18} color="#541424" />
-          <Text className="text-primary/80 font-urbanist capitalize">
-            {user?.gender || "other"}
-          </Text>
-        </View>
-      </View>
 
-      {/* Actions */}
-      <View className="px-6 mt-10">
-        <PrimaryButton
-          title="Sign Out"
-          leftIconName="log-out-outline"
-          onPress={async () => {
-            try {
-              await signOut();
-              toast.success({ title: "Signed out", message: "See you soon" });
-            } catch (e) {
-              toast.error({
-                title: "Sign out failed",
-                message: e?.message || "Try again",
-              });
-            } finally {
-              router.replace("/sign-in");
-            }
-          }}
-          withHaptics
-          hapticStyle="medium"
-          className="w-full"
-        />
-      </View>
+        {/* User Support & FAQs */}
+        <View className="px-6 mb-6">
+          <Animated.Text
+            entering={FadeInDown.duration(400).delay(400).springify()}
+            className="text-primary font-urbanist-bold text-xl mb-3"
+          >
+            User Support & FAQs
+          </Animated.Text>
+
+          {/* Support Cards */}
+          <View className="gap-3 mb-4">
+            <ProfileCard
+              icon="help-circle-outline"
+              title="Help Center"
+              subtitle="Get answers to common questions"
+              delay={450}
+              onPress={async () => {
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch {}
+                toast.info({
+                  title: "Help Center",
+                  message: "Visit support.aerisgo.com for assistance",
+                });
+              }}
+            />
+            <ProfileCard
+              icon="chatbubble-ellipses-outline"
+              title="Contact Support"
+              subtitle="Reach out to our support team"
+              delay={500}
+              onPress={async () => {
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch {}
+                toast.info({
+                  title: "Contact Support",
+                  message: "Email: support@aerisgo.com",
+                });
+              }}
+            />
+          </View>
+
+          {/* FAQs */}
+          <Animated.Text
+            entering={FadeInDown.duration(400).delay(550).springify()}
+            className="text-primary font-urbanist-semibold text-lg mb-3 mt-2"
+          >
+            Frequently Asked Questions
+          </Animated.Text>
+          {faqs.map((faq, idx) => (
+            <FAQItem
+              key={idx}
+              question={faq.question}
+              answer={faq.answer}
+              delay={600 + idx * 50}
+            />
+          ))}
+        </View>
+
+        {/* Sign Out Button */}
+        <Animated.View
+          entering={FadeInUp.duration(500).delay(800).springify()}
+          className="px-6 mt-4"
+        >
+          <PrimaryButton
+            title="Sign Out"
+            leftIconName="log-out-outline"
+            onPress={async () => {
+              try {
+                await signOut();
+                toast.success({ title: "Signed out", message: "See you soon!" });
+              } catch (e) {
+                toast.error({
+                  title: "Sign out failed",
+                  message: e?.message || "Try again",
+                });
+              } finally {
+                router.replace("/sign-in");
+              }
+            }}
+            withHaptics
+            hapticStyle="medium"
+            className="w-full"
+          />
+        </Animated.View>
+      </ScrollView>
     </View>
   );
 }
