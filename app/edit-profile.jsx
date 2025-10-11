@@ -186,34 +186,97 @@ export default function EditProfile() {
               entering={FadeInDown.duration(400).delay(200).springify()}
               className="mt-4"
             >
-              <Text className="text-primary font-urbanist-semibold text-base mb-2">
+              <Text className="text-primary font-urbanist-medium text-base mb-2">
                 Gender
               </Text>
-              <View className="flex-row gap-3">
-                {["male", "female", "other"].map((g) => (
-                  <TouchableOpacity
-                    key={g}
-                    onPress={async () => {
-                      try {
-                        await Haptics.selectionAsync();
-                      } catch {}
-                      setGender(g);
-                    }}
-                    className={`flex-1 py-3 rounded-[28px] border ${
-                      gender === g
-                        ? "bg-primary border-primary"
-                        : "bg-secondary/40 border-primary/10"
-                    }`}
-                  >
+              <View className="flex-row items-center gap-3">
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={async () => {
+                    try {
+                      await Haptics.selectionAsync();
+                    } catch {}
+                    setGender("male");
+                  }}
+                  className={`px-4 py-3 rounded-full border ${
+                    gender === "male"
+                      ? "bg-primary border-primary"
+                      : "bg-secondary/10 border-primary/10"
+                  }`}
+                >
+                  <View className="flex-row items-center gap-2">
+                    <Ionicons
+                      name="male"
+                      size={18}
+                      color={gender === "male" ? "#e3d7cb" : "#541424"}
+                    />
                     <Text
-                      className={`text-center font-urbanist-semibold capitalize ${
-                        gender === g ? "text-secondary" : "text-primary"
-                      }`}
+                      className={`${
+                        gender === "male" ? "text-secondary" : "text-primary"
+                      } font-urbanist-semibold`}
                     >
-                      {g}
+                      Male
                     </Text>
-                  </TouchableOpacity>
-                ))}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={async () => {
+                    try {
+                      await Haptics.selectionAsync();
+                    } catch {}
+                    setGender("female");
+                  }}
+                  className={`px-4 py-3 rounded-full border ${
+                    gender === "female"
+                      ? "bg-primary border-primary"
+                      : "bg-secondary/10 border-primary/10"
+                  }`}
+                >
+                  <View className="flex-row items-center gap-2">
+                    <Ionicons
+                      name="female"
+                      size={18}
+                      color={gender === "female" ? "#e3d7cb" : "#541424"}
+                    />
+                    <Text
+                      className={`${
+                        gender === "female" ? "text-secondary" : "text-primary"
+                      } font-urbanist-semibold`}
+                    >
+                      Female
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={async () => {
+                    try {
+                      await Haptics.selectionAsync();
+                    } catch {}
+                    setGender("other");
+                  }}
+                  className={`px-4 py-3 rounded-full border ${
+                    gender === "other"
+                      ? "bg-primary border-primary"
+                      : "bg-secondary/10 border-primary/10"
+                  }`}
+                >
+                  <View className="flex-row items-center gap-2">
+                    <Ionicons
+                      name="person-outline"
+                      size={18}
+                      color={gender === "other" ? "#e3d7cb" : "#541424"}
+                    />
+                    <Text
+                      className={`${
+                        gender === "other" ? "text-secondary" : "text-primary"
+                      } font-urbanist-semibold`}
+                    >
+                      Other
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             </Animated.View>
 
