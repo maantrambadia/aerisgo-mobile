@@ -10,12 +10,10 @@ import {
 } from "react-native";
 import Animated, {
   FadeInDown,
-  FadeInUp,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
-  RotateInDownLeft,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";

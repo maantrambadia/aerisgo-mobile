@@ -10,6 +10,7 @@ import {
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import FormInput from "../components/FormInput";
 import PrimaryButton from "../components/PrimaryButton";
 import { changePassword } from "../lib/profile";

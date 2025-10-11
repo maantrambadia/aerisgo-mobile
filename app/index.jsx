@@ -77,7 +77,7 @@ export default function Welcome() {
           className="mt-10"
         >
           <Text className="text-primary font-urbanist-bold text-4xl leading-tight">
-            Let's Book{"\n"}Your Next Flight
+            Let&apos;s Book{"\n"}Your Next Flight
           </Text>
           <Text className="text-primary opacity-80 font-urbanist-medium text-base mt-3">
             Experience seamless flight booking, exclusive deals, and

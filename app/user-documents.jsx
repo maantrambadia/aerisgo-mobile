@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -32,7 +32,7 @@ export default function UserDocuments() {
       setLoading(true);
       const result = await getDocuments();
       setDocuments(result.documents || []);
-    } catch (error) {
+    } catch (_error) {
       toast.error({
         title: "Error",
         message: "Failed to load documents",
