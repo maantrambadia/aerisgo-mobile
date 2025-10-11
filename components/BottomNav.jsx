@@ -85,7 +85,7 @@ export default function BottomNav({ active = "home", onPressItem }) {
   useEffect(() => {
     if (itemWidth > 0) {
       indicatorX.value = withSpring(activeIndex * itemWidth, {
-        damping: 18,
+        damping: 40,
         stiffness: 260,
       });
     }
