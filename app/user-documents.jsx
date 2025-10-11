@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,17 +55,42 @@ export default function UserDocuments() {
     setShowModal(true);
   };
 
+  // Validation functions
+  const isValidAadhar = (v) => /^\d{12}$/.test(v);
+  const isValidPassport = (v) => /^[A-Z][0-9]{7}$/.test(v);
+
   const handleSave = async () => {
     try {
-      if (!documentNumber.trim()) {
+      const docNum = documentNumber.trim().toUpperCase();
+
+      if (!docNum) {
         toast.error({ title: "Error", message: "Document number is required" });
         return;
+      }
+
+      // Validate based on document type
+      if (editingType === "aadhar") {
+        if (!isValidAadhar(docNum)) {
+          toast.error({
+            title: "Invalid Aadhar",
+            message: "Aadhar must be 12 digits",
+          });
+          return;
+        }
+      } else if (editingType === "passport") {
+        if (!isValidPassport(docNum)) {
+          toast.error({
+            title: "Invalid Passport",
+            message: "Passport format: 1 letter + 7 digits (e.g., A1234567)",
+          });
+          return;
+        }
       }
 
       setSaving(true);
       await upsertDocument({
         documentType: editingType,
-        documentNumber: documentNumber.trim(),
+        documentNumber: docNum,
       });
 
       toast.success({
@@ -222,45 +249,62 @@ export default function UserDocuments() {
         animationType="fade"
         onRequestClose={() => setShowModal(false)}
       >
-        <View className="flex-1 justify-end bg-black/30">
-          <Animated.View
-            entering={FadeInUp.duration(250).springify()}
-            className="bg-background rounded-t-3xl p-6"
-          >
-            {/* Handle */}
-            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-primary font-urbanist-bold text-xl">
-                {editingType ? getDocumentLabel(editingType) : "Document"}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowModal(false)}
-                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-              >
-                <Ionicons name="close" size={18} color="#541424" />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View className="flex-1 justify-end bg-black/30">
+            <Animated.View
+              entering={FadeInUp.duration(250).springify()}
+              className="bg-background rounded-t-3xl p-6"
+            >
+              {/* Handle */}
+              <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-primary font-urbanist-bold text-xl">
+                  {editingType ? getDocumentLabel(editingType) : "Document"}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowModal(false)}
+                  className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+                >
+                  <Ionicons name="close" size={18} color="#541424" />
+                </TouchableOpacity>
+              </View>
 
-            <FormInput
-              label="Document Number"
-              placeholder="Enter document number"
-              value={documentNumber}
-              onChangeText={setDocumentNumber}
-              leftIconName="card-outline"
-            />
-
-            <View className="mt-4">
-              <PrimaryButton
-                title={saving ? "Saving..." : "Save Document"}
-                onPress={handleSave}
-                disabled={saving}
-                withHaptics
-                hapticStyle="medium"
-                className="w-full"
+              <FormInput
+                label="Document Number"
+                placeholder={
+                  editingType === "aadhar"
+                    ? "12 digits"
+                    : "1 letter + 7 digits (e.g., A1234567)"
+                }
+                value={documentNumber}
+                onChangeText={(text) => {
+                  if (editingType === "aadhar") {
+                    setDocumentNumber(text.replace(/[^0-9]/g, ""));
+                  } else {
+                    setDocumentNumber(text.toUpperCase());
+                  }
+                }}
+                leftIconName="card-outline"
+                keyboardType={editingType === "aadhar" ? "numeric" : "default"}
+                maxLength={editingType === "aadhar" ? 12 : 8}
               />
-            </View>
-          </Animated.View>
-        </View>
+
+              <View className="mt-4 mb-2">
+                <PrimaryButton
+                  title={saving ? "Saving..." : "Save Document"}
+                  onPress={handleSave}
+                  disabled={saving}
+                  withHaptics
+                  hapticStyle="medium"
+                  className="w-full"
+                />
+              </View>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
