@@ -232,7 +232,7 @@ export default function Profile() {
                 <Image
                   source={avatarSource}
                   resizeMode="cover"
-                  className="w-24 h-[93px] rounded-full mt-3"
+                  className="w-24 h-[93px] rounded-full mt-3 p-2"
                 />
               ) : (
                 <Text className="text-secondary font-urbanist-bold text-4xl">
