@@ -172,11 +172,12 @@ export default function EditProfile() {
             >
               <FormInput
                 label="Phone Number"
-                placeholder="Enter 10-digit phone"
+                placeholder="9000000000"
                 value={phone}
                 onChangeText={(text) => setPhone(text.replace(/[^0-9]/g, ""))}
                 leftIconName="call-outline"
                 keyboardType="phone-pad"
+                prefix="+91"
                 maxLength={10}
               />
             </Animated.View>
