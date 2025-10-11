@@ -51,11 +51,9 @@ const ScalePress = ({ children, onPress, className = "" }) => {
 
 // Profile action card with icon
 const ProfileCard = ({ icon, title, subtitle, onPress, delay = 0 }) => (
-  <Animated.View
-    entering={FadeInDown.duration(400).delay(delay).springify()}
-  >
+  <Animated.View entering={FadeInDown.duration(400).delay(delay).springify()}>
     <ScalePress onPress={onPress}>
-      <View className="bg-secondary/40 border border-primary/10 rounded-2xl p-4 flex-row items-center justify-between">
+      <View className="bg-secondary/40 border border-primary/10 rounded-[28px] p-4 flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
           <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center">
             <Ionicons name={icon} size={22} color="#541424" />
@@ -112,7 +110,7 @@ const FAQItem = ({ question, answer, delay = 0 }) => {
       <TouchableOpacity
         onPress={toggle}
         activeOpacity={0.7}
-        className="bg-secondary/40 border border-primary/10 rounded-2xl p-4"
+        className="bg-secondary/40 border border-primary/10 rounded-[28px] p-4"
       >
         <View className="flex-row items-center justify-between">
           <Text className="text-primary font-urbanist-semibold text-base flex-1 pr-3">
@@ -205,31 +203,31 @@ export default function Profile() {
 
   return (
     <View className="flex-1 bg-background">
+      {/* Sticky Header */}
+      <Animated.View
+        entering={FadeInDown.duration(500).springify()}
+        className="px-6 pt-6 pb-4 bg-background"
+      >
+        <Text className="text-primary font-urbanist-bold text-3xl">
+          Profile
+        </Text>
+        <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
+          Manage your account and preferences
+        </Text>
+      </Animated.View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* Header */}
-        <Animated.View
-          entering={FadeInDown.duration(500).springify()}
-          className="px-6 pt-6 pb-4"
-        >
-          <Text className="text-primary font-urbanist-bold text-3xl">
-            Profile
-          </Text>
-          <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
-            Manage your account and preferences
-          </Text>
-        </Animated.View>
-
         {/* Profile Picture & Info */}
         <Animated.View
-          entering={RotateInDownLeft.duration(600).delay(100).springify()}
-          className="mx-6 mb-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl p-6 border border-primary/15"
+          entering={FadeInDown.duration(600).delay(100).springify()}
+          className="mx-6 mb-6 bg-primary rounded-[36px] p-6 border border-secondary/15"
         >
           <View className="items-center">
             {/* Avatar */}
-            <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center border-2 border-primary/20 overflow-hidden mb-4">
+            <View className="w-24 h-24 rounded-full bg-secondary/20 items-center justify-center border-2 border-secondary/30 overflow-hidden mb-4">
               {avatarSource ? (
                 <Image
                   source={avatarSource}
@@ -237,31 +235,31 @@ export default function Profile() {
                   className="w-24 h-[93px] rounded-full mt-3"
                 />
               ) : (
-                <Text className="text-primary font-urbanist-bold text-4xl">
+                <Text className="text-secondary font-urbanist-bold text-4xl">
                   ?
                 </Text>
               )}
             </View>
 
             {/* Name & Email */}
-            <Text className="text-primary font-urbanist-bold text-2xl text-center">
+            <Text className="text-secondary font-urbanist-bold text-2xl text-center">
               {user?.name || "Traveler"}
             </Text>
-            <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
+            <Text className="text-secondary/80 font-urbanist-medium text-base mt-1">
               {user?.email || "—"}
             </Text>
 
             {/* Info Pills */}
             <View className="flex-row gap-3 mt-4">
-              <View className="bg-secondary/60 px-4 py-2 rounded-full flex-row items-center gap-2">
-                <Ionicons name="call" size={14} color="#541424" />
-                <Text className="text-primary font-urbanist-medium text-sm">
+              <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
+                <Ionicons name="call" size={14} color="#e3d7cb" />
+                <Text className="text-secondary font-urbanist-medium text-sm">
                   {user?.phone || "—"}
                 </Text>
               </View>
-              <View className="bg-secondary/60 px-4 py-2 rounded-full flex-row items-center gap-2">
-                <Ionicons name="person" size={14} color="#541424" />
-                <Text className="text-primary font-urbanist-medium text-sm capitalize">
+              <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
+                <Ionicons name="person" size={14} color="#e3d7cb" />
+                <Text className="text-secondary font-urbanist-medium text-sm capitalize">
                   {user?.gender || "other"}
                 </Text>
               </View>
@@ -397,7 +395,10 @@ export default function Profile() {
             onPress={async () => {
               try {
                 await signOut();
-                toast.success({ title: "Signed out", message: "See you soon!" });
+                toast.success({
+                  title: "Signed out",
+                  message: "See you soon!",
+                });
               } catch (e) {
                 toast.error({
                   title: "Sign out failed",

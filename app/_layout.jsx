@@ -108,7 +108,9 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeScreen disableBottom={pathname === "/search-results"}>
+    <SafeScreen
+      disableBottom={pathname === "/search-results" || pathname === "/profile"}
+    >
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
