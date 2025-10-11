@@ -335,8 +335,8 @@ export default function Profile() {
 
         {/* Sign Out Button */}
         <Animated.View
-          entering={FadeInUp.duration(500).delay(800).springify()}
-          className="px-6 mt-4 mb-6"
+          entering={FadeInDown.duration(500).delay(150).springify()}
+          className="px-6 mb-32"
         >
           <PrimaryButton
             title="Sign Out"
