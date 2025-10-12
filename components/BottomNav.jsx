@@ -8,6 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useEffect, useMemo, useState } from "react";
 import * as Haptics from "expo-haptics";
+import { BlurView } from "expo-blur";
 
 const TabItem = ({ label, icon, iconActive, active, onPress }) => {
   const scale = useSharedValue(1);
@@ -110,8 +111,10 @@ export default function BottomNav({ active = "home", onPressItem }) {
         alignItems: "center",
       }}
     >
-      <View
-        className="w-11/12 rounded-full border border-primary/10 bg-secondary overflow-hidden"
+      <BlurView
+        intensity={25}
+        tint="light"
+        className="w-11/12 rounded-full border border-primary/10 overflow-hidden"
         style={{
           paddingHorizontal: 6,
           paddingVertical: 6,
@@ -144,7 +147,7 @@ export default function BottomNav({ active = "home", onPressItem }) {
             </View>
           ))}
         </View>
-      </View>
+      </BlurView>
     </View>
   );
 }
