@@ -145,6 +145,31 @@ export default function SeatSelection() {
     try {
       setLoading(true);
 
+      // Check if user already has a booking on this flight
+      const bookingsRes = await apiFetch("/bookings/my-bookings", {
+        method: "GET",
+        auth: true,
+      });
+
+      const existingBooking = bookingsRes.data?.items?.find(
+        (booking) =>
+          booking.flightId?._id === flight._id &&
+          (booking.status === "confirmed" || booking.status === "pending")
+      );
+
+      if (existingBooking) {
+        setLoading(false);
+        toast.error({
+          title: "Already Booked",
+          message: `You already have a booking on this flight (Seat ${existingBooking.seatNumber})`,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setTimeout(() => {
+          router.back();
+        }, 2000);
+        return;
+      }
+
       // Fetch seats
       const seatsRes = await apiFetch(`/seats/flight/${flight._id}`, {
         method: "GET",
@@ -164,6 +189,7 @@ export default function SeatSelection() {
         title: "Error",
         message: err?.message || "Failed to load seats",
       });
+      router.back();
     } finally {
       setTimeout(() => setLoading(false), 400);
     }
