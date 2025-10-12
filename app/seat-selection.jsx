@@ -318,10 +318,10 @@ export default function SeatSelection() {
         <View className="flex-row items-start justify-between">
           <View style={{ maxWidth: "60%" }}>
             <Text className="text-primary font-urbanist-bold text-3xl leading-9">
-              Choose Your
+              Choose
             </Text>
             <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
-              Seat
+              Your Seat
             </Text>
           </View>
           <RoutePill from={from} to={to} />
