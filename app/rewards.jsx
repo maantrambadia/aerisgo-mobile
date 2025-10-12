@@ -176,6 +176,47 @@ export default function RewardsScreen() {
         </View>
       </Animated.View>
 
+      {/* Recent Activity Header - Sticky */}
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(200).springify()}
+        className="mx-6 mb-4"
+      >
+        <Text className="text-lg font-urbanist-bold text-primary">
+          Recent Activity
+        </Text>
+      </Animated.View>
+
+      {/* Filter Tabs - Sticky */}
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(250).springify()}
+        className="mx-6 mb-4"
+      >
+        <BlurView
+          intensity={20}
+          tint="light"
+          className="flex-row rounded-[28px] overflow-hidden border border-primary/10"
+        >
+          {["all", "earn", "redeem"].map((f) => (
+            <Pressable
+              key={f}
+              onPress={() => handleFilterPress(f)}
+              className={`flex-1 py-3 items-center ${
+                filter === f ? "bg-primary" : "bg-transparent"
+              }`}
+            >
+              <Text
+                className={`font-urbanist-semibold text-sm capitalize ${
+                  filter === f ? "text-text" : "text-primary/60"
+                }`}
+              >
+                {f}
+              </Text>
+            </Pressable>
+          ))}
+        </BlurView>
+      </Animated.View>
+
+      {/* Transaction History - Scrollable */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -183,47 +224,6 @@ export default function RewardsScreen() {
         }
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Recent Activity Header */}
-        <Animated.View
-          entering={FadeInDown.duration(400).delay(200).springify()}
-          className="mx-6 mb-4"
-        >
-          <Text className="text-lg font-urbanist-bold text-primary">
-            Recent Activity
-          </Text>
-        </Animated.View>
-
-        {/* Filter Tabs */}
-        <Animated.View
-          entering={FadeInDown.duration(400).delay(250).springify()}
-          className="mx-6 mb-4"
-        >
-          <BlurView
-            intensity={20}
-            tint="light"
-            className="flex-row rounded-[28px] overflow-hidden border border-primary/10"
-          >
-            {["all", "earn", "redeem"].map((f) => (
-              <Pressable
-                key={f}
-                onPress={() => handleFilterPress(f)}
-                className={`flex-1 py-3 items-center ${
-                  filter === f ? "bg-primary" : "bg-transparent"
-                }`}
-              >
-                <Text
-                  className={`font-urbanist-semibold text-sm capitalize ${
-                    filter === f ? "text-text" : "text-primary/60"
-                  }`}
-                >
-                  {f}
-                </Text>
-              </Pressable>
-            ))}
-          </BlurView>
-        </Animated.View>
-
-        {/* Transaction History */}
         <Animated.View
           entering={FadeInDown.duration(400).delay(300).springify()}
           className="mx-6"

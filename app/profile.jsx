@@ -214,48 +214,49 @@ export default function Profile() {
         </Text>
       </Animated.View>
 
-      {/* Sticky Profile Card */}
+      {/* Sticky Profile Card - Compact */}
       <Animated.View
         entering={FadeInDown.duration(600).delay(100).springify()}
-        className="mx-6 mb-6 bg-primary rounded-[36px] p-6 border border-secondary/15"
+        className="mx-6 mb-4 bg-primary rounded-[36px] p-4 border border-secondary/15"
       >
-        <View className="items-center">
+        <View className="flex-row items-center">
           {/* Avatar */}
-          <View className="w-24 h-24 rounded-full bg-secondary/20 items-center justify-center border-2 border-secondary/30 overflow-hidden mb-4">
+          <View className="w-16 h-16 rounded-full bg-secondary/20 items-center justify-center border-2 border-secondary/30 overflow-hidden mr-4">
             {avatarSource ? (
               <Image
                 source={avatarSource}
                 resizeMode="cover"
-                className="w-24 h-[93px] rounded-full mt-3 p-2"
+                className="w-16 h-[62px] rounded-full mt-2 p-1"
               />
             ) : (
-              <Text className="text-secondary font-urbanist-bold text-4xl">
+              <Text className="text-secondary font-urbanist-bold text-2xl">
                 ?
               </Text>
             )}
           </View>
 
-          {/* Name & Email */}
-          <Text className="text-secondary font-urbanist-bold text-2xl text-center">
-            {user?.name || "Traveler"}
-          </Text>
-          <Text className="text-secondary/80 font-urbanist-medium text-base mt-1">
-            {user?.email || "—"}
-          </Text>
-
-          {/* Info Pills */}
-          <View className="flex-row gap-3 mt-4">
-            <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
-              <Ionicons name="call" size={14} color="#e3d7cb" />
-              <Text className="text-secondary font-urbanist-medium text-sm">
-                {user?.phone || "—"}
-              </Text>
-            </View>
-            <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
-              <Ionicons name="person" size={14} color="#e3d7cb" />
-              <Text className="text-secondary font-urbanist-medium text-sm capitalize">
-                {user?.gender || "other"}
-              </Text>
+          {/* Name & Info */}
+          <View className="flex-1">
+            <Text className="text-secondary font-urbanist-bold text-xl">
+              {user?.name || "Traveler"}
+            </Text>
+            <Text className="text-secondary/70 font-urbanist text-sm mt-0.5">
+              {user?.email || "—"}
+            </Text>
+            {/* Info Pills - Horizontal */}
+            <View className="flex-row gap-2 mt-2">
+              <View className="bg-secondary/20 px-3 py-1 rounded-full flex-row items-center gap-1">
+                <Ionicons name="call" size={12} color="#e3d7cb" />
+                <Text className="text-secondary font-urbanist text-xs">
+                  {user?.phone || "—"}
+                </Text>
+              </View>
+              <View className="bg-secondary/20 px-3 py-1 rounded-full flex-row items-center gap-1">
+                <Ionicons name="person" size={12} color="#e3d7cb" />
+                <Text className="text-secondary font-urbanist text-xs capitalize">
+                  {user?.gender || "other"}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
