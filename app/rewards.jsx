@@ -196,7 +196,7 @@ export default function RewardsScreen() {
           entering={FadeInDown.delay(300)}
           className="mx-6 mb-6 flex-row gap-3"
         >
-          <Pressable className="flex-1 rounded-2xl bg-primary/5 p-4 border border-primary/10">
+          <Pressable className="flex-1 rounded-[28px] bg-primary/5 p-4 border border-primary/10">
             <View className="h-12 w-12 rounded-full bg-primary/10 items-center justify-center mb-3">
               <Ionicons name="airplane" size={24} color="#541424" />
             </View>
@@ -208,7 +208,7 @@ export default function RewardsScreen() {
             </Text>
           </Pressable>
 
-          <Pressable className="flex-1 rounded-2xl bg-primary/5 p-4 border border-primary/10">
+          <Pressable className="flex-1 rounded-[28px] bg-primary/5 p-4 border border-primary/10">
             <View className="h-12 w-12 rounded-full bg-primary/10 items-center justify-center mb-3">
               <Ionicons name="card" size={24} color="#541424" />
             </View>
@@ -226,7 +226,7 @@ export default function RewardsScreen() {
           <BlurView
             intensity={20}
             tint="light"
-            className="flex-row rounded-2xl overflow-hidden border border-primary/10"
+            className="flex-row rounded-[28px] overflow-hidden border border-primary/10"
           >
             {["all", "earn", "redeem"].map((f) => (
               <Pressable
@@ -277,7 +277,7 @@ export default function RewardsScreen() {
                   <BlurView
                     intensity={40}
                     tint="light"
-                    className="rounded-2xl overflow-hidden border border-primary/10"
+                    className="rounded-[28px] overflow-hidden border border-primary/10"
                   >
                     <View className="p-4 flex-row items-center justify-between">
                       <View className="flex-row items-center gap-3 flex-1">
