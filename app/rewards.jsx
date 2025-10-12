@@ -6,6 +6,7 @@ import {
   RefreshControl,
   Pressable,
   BackHandler,
+  ActivityIndicator,
 } from "react-native";
 import Animated, {
   FadeInDown,
@@ -17,7 +18,7 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
 import Loader from "../components/Loader";
-import { getRewardBalance } from "../lib/rewards";
+import { getRewardBalance, getRewardHistory } from "../lib/rewards";
 import { toast } from "../lib/toast";
 
 export default function RewardsScreen() {
@@ -31,6 +32,9 @@ export default function RewardsScreen() {
   });
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [filter, setFilter] = useState("all"); // all, earn, redeem
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Block Android hardware back from leaving the main tab
   useFocusEffect(
@@ -58,6 +62,8 @@ export default function RewardsScreen() {
         transactionCount: data.transactionCount || 0,
       });
       setRecentTransactions(data.recentTransactions || []);
+      setHasMore(data.hasMore || false);
+      setCurrentPage(1);
     } catch (err) {
       console.error("Failed to fetch rewards:", err);
       toast.error({
@@ -69,6 +75,32 @@ export default function RewardsScreen() {
         setLoading(false);
         setRefreshing(false);
       }, 200);
+    }
+  };
+
+  const loadMoreTransactions = async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
+      const data = await getRewardHistory({ page: nextPage, limit: 6 });
+
+      if (data.transactions && data.transactions.length > 0) {
+        setRecentTransactions((prev) => [...prev, ...data.transactions]);
+        setCurrentPage(nextPage);
+        setHasMore(nextPage < data.pages);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error("Failed to load more transactions:", err);
+      toast.error({
+        title: "Error",
+        message: "Failed to load more transactions",
+      });
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -234,10 +266,20 @@ export default function RewardsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         contentContainerStyle={{ paddingBottom: 40 }}
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom =
+            layoutMeasurement.height + contentOffset.y >=
+            contentSize.height - 100;
+          if (isCloseToBottom && hasMore && !loadingMore) {
+            loadMoreTransactions();
+          }
+        }}
+        scrollEventThrottle={400}
       >
         <Animated.View
           entering={FadeInDown.duration(400).delay(300).springify()}
-          className="mx-6"
+          className="mx-6 mb-20"
         >
           {filteredTransactions.length === 0 ? (
             <View className="py-12 items-center">
@@ -301,6 +343,23 @@ export default function RewardsScreen() {
                   </BlurView>
                 </Animated.View>
               ))}
+            </View>
+          )}
+          {/* Load More Indicator */}
+          {loadingMore && (
+            <View className="py-6 items-center">
+              <ActivityIndicator size="small" color="#541424" />
+              <Text className="text-primary/60 font-urbanist text-sm mt-2">
+                Loading more...
+              </Text>
+            </View>
+          )}
+          {/* End of List Indicator */}
+          {!hasMore && filteredTransactions.length > 0 && (
+            <View className="py-6 items-center">
+              <Text className="text-primary/40 font-urbanist text-sm">
+                No more transactions
+              </Text>
             </View>
           )}
         </Animated.View>
