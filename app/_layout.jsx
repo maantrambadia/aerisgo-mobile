@@ -112,7 +112,8 @@ export default function RootLayout() {
       disableBottom={
         pathname === "/search-results" ||
         pathname === "/profile" ||
-        pathname === "/rewards"
+        pathname === "/rewards" ||
+        pathname === "/booking-confirmation"
       }
     >
       <StatusBar style="dark" />
