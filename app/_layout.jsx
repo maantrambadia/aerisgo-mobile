@@ -65,7 +65,7 @@ export default function RootLayout() {
     const map = {
       "/home": "home",
       "/tickets": "tickets",
-      "/search": "search",
+      "/rewards": "rewards",
       "/profile": "profile",
     };
     const key = map[pathname] || null;
@@ -90,7 +90,7 @@ export default function RootLayout() {
       const isProtectedRoute =
         pathname === "/home" ||
         pathname === "/tickets" ||
-        pathname === "/search" ||
+        pathname === "/rewards" ||
         pathname === "/profile";
       if (token && isAuthRoute) {
         router.replace("/home");
@@ -109,7 +109,11 @@ export default function RootLayout() {
 
   return (
     <SafeScreen
-      disableBottom={pathname === "/search-results" || pathname === "/profile"}
+      disableBottom={
+        pathname === "/search-results" ||
+        pathname === "/profile" ||
+        pathname === "/rewards"
+      }
     >
       <StatusBar style="dark" />
       <Stack
@@ -136,7 +140,7 @@ export default function RootLayout() {
           options={{ animation: "none", gestureEnabled: false }}
         />
         <Stack.Screen
-          name="search"
+          name="rewards"
           options={{ animation: "none", gestureEnabled: false }}
         />
         <Stack.Screen
@@ -186,7 +190,7 @@ export default function RootLayout() {
           onPressItem={(key) => {
             if (key === "home") router.replace("/home");
             if (key === "tickets") router.replace("/tickets");
-            if (key === "search") router.replace("/search");
+            if (key === "rewards") router.replace("/rewards");
             if (key === "profile") router.replace("/profile");
           }}
         />

@@ -58,7 +58,12 @@ export default function BottomNav({ active = "home", onPressItem }) {
         icon: "pricetag-outline",
         iconActive: "pricetag",
       },
-      { key: "search", label: "Search", icon: "search", iconActive: "search" },
+      {
+        key: "rewards",
+        label: "Rewards",
+        icon: "gift-outline",
+        iconActive: "gift",
+      },
       {
         key: "profile",
         label: "Profile",
