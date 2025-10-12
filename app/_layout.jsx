@@ -148,7 +148,22 @@ export default function RootLayout() {
           options={{ animation: "none", gestureEnabled: false }}
         />
         {/* Search Results */}
-        <Stack.Screen name="search-results" options={{ animation: "none" }} />
+        <Stack.Screen
+          name="search-results"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="flight-details"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="seat-selection"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="booking-confirmation"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
         {/* Auth */}
         <Stack.Screen
           name="(auth)/sign-up"

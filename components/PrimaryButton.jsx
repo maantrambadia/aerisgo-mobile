@@ -35,7 +35,7 @@ const PrimaryButton = ({
     variant === "secondary"
       ? "bg-secondary border border-primary/10"
       : "bg-primary";
-  const textClass = variant === "secondary" ? "text-primary" : "text-secondary";
+  const textClass = variant === "secondary" ? "text-primary" : "text-text";
 
   return (
     <TouchableOpacity
