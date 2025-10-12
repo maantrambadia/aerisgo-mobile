@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   Modal,
   KeyboardAvoidingView,
   Platform,
@@ -16,11 +15,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import FormInput from "../components/FormInput";
 import PrimaryButton from "../components/PrimaryButton";
+import Loader from "../components/Loader";
 import { getDocuments, upsertDocument, deleteDocument } from "../lib/profile";
 import { toast } from "../lib/toast";
 
 export default function UserDocuments() {
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [documents, setDocuments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingType, setEditingType] = useState(null);
@@ -29,7 +29,6 @@ export default function UserDocuments() {
 
   const loadDocuments = async () => {
     try {
-      setLoading(true);
       const result = await getDocuments();
       setDocuments(result.documents || []);
     } catch (_error) {
@@ -38,7 +37,7 @@ export default function UserDocuments() {
         message: "Failed to load documents",
       });
     } finally {
-      setLoading(false);
+      setTimeout(() => setInitialLoading(false), 200);
     }
   };
 
@@ -138,6 +137,10 @@ export default function UserDocuments() {
     return type;
   };
 
+  if (initialLoading) {
+    return <Loader message="Loading documents" subtitle="Fetching your documents" />;
+  }
+
   return (
     <View className="flex-1 bg-background">
       {/* Header */}
@@ -167,11 +170,7 @@ export default function UserDocuments() {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View className="px-6 mt-4">
-          {loading ? (
-            <View className="py-10 items-center">
-              <ActivityIndicator size="large" color="#541424" />
-            </View>
-          ) : (
+          {(
             <>
               {["aadhar", "passport"].map((type, idx) => {
                 const doc = documents.find((d) => d.documentType === type);

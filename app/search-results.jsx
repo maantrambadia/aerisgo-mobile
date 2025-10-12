@@ -259,7 +259,7 @@ export default function SearchResults() {
         if (!mounted) return;
         setError(e?.message || "Failed to fetch flights");
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setTimeout(() => setLoading(false), 400);
       }
     })();
     return () => {
@@ -381,7 +381,11 @@ export default function SearchResults() {
         >
           {loading ? (
             <View className="mt-8">
-              <Loader message="Searching flights" subtitle="Finding the best options for you" fullscreen={false} />
+              <Loader
+                message="Searching flights"
+                subtitle="Finding the best options for you"
+                fullscreen={false}
+              />
             </View>
           ) : error ? (
             <View className="mt-8 items-center justify-center">

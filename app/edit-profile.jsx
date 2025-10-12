@@ -13,11 +13,13 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import FormInput from "../components/FormInput";
 import PrimaryButton from "../components/PrimaryButton";
+import Loader from "../components/Loader";
 import { getUserProfile, setUserProfile } from "../lib/storage";
 import { updateProfile } from "../lib/profile";
 import { toast } from "../lib/toast";
 
 export default function EditProfile() {
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -33,6 +35,8 @@ export default function EditProfile() {
         setPhone(phoneNum);
         setGender(user.gender || "other");
       }
+      // Small delay for consistent UX
+      setTimeout(() => setInitialLoading(false), 200);
     })();
   }, []);
 
@@ -119,6 +123,12 @@ export default function EditProfile() {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <Loader message="Loading profile" subtitle="Preparing your information" />
+    );
+  }
 
   return (
     <View className="flex-1 bg-background">

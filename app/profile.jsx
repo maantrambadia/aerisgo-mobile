@@ -18,6 +18,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import PrimaryButton from "../components/PrimaryButton";
+import Loader from "../components/Loader";
 import { getUserProfile } from "../lib/storage";
 import { signOut, fetchMe } from "../lib/auth";
 import { router } from "expo-router";
@@ -129,12 +130,14 @@ const FAQItem = ({ question, answer, delay = 0 }) => {
 };
 
 export default function Profile() {
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     (async () => {
       const u = await getUserProfile();
       setUser(u);
+      setTimeout(() => setLoading(false), 200);
     })();
   }, []);
 
@@ -198,6 +201,12 @@ export default function Profile() {
         "Yes, cancellations are subject to fare rules. Refunds may take 7-10 business days to process.",
     },
   ];
+
+  if (loading) {
+    return (
+      <Loader message="Loading profile" subtitle="Fetching your information" />
+    );
+  }
 
   return (
     <View className="flex-1 bg-background">

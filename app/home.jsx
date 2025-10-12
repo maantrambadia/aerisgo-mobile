@@ -23,6 +23,7 @@ import * as Haptics from "expo-haptics";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import PrimaryButton from "../components/PrimaryButton";
+import Loader from "../components/Loader";
 import { router } from "expo-router";
 import { getUserProfile } from "../lib/storage";
 import { fetchMe } from "../lib/auth";
@@ -30,6 +31,7 @@ import { toast } from "../lib/toast";
 import { COLORS } from "../constants/colors";
 
 export default function Home() {
+  const [loading, setLoading] = useState(true);
   const [tripType, setTripType] = useState("oneway"); // roundtrip disabled
   const [from, setFrom] = useState("Rajkot, India");
   const [to, setTo] = useState("Mumbai, India");
@@ -49,7 +51,10 @@ export default function Home() {
       try {
         const p = await getUserProfile();
         if (mounted) setUser(p);
-      } catch {}
+      } catch {
+      } finally {
+        if (mounted) setTimeout(() => setLoading(false), 200);
+      }
     })();
     return () => {
       mounted = false;
@@ -171,6 +176,23 @@ export default function Home() {
       };
     }, [])
   );
+
+  if (loading) {
+    return <Loader message="Loading" subtitle="Preparing your flight search" />;
+  }
+
+  const POPULAR_CITIES = [
+    "Mumbai, India",
+    "Delhi, India",
+    "Bangalore, India",
+    "Hyderabad, India",
+    "Ahmedabad, India",
+    "Chennai, India",
+    "Kolkata, India",
+    "Surat, India",
+    "Pune, India",
+    "Jaipur, India",
+  ];
 
   return (
     <View className="flex-1 bg-background">

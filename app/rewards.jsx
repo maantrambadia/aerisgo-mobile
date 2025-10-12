@@ -5,7 +5,6 @@ import {
   ScrollView,
   RefreshControl,
   Pressable,
-  ActivityIndicator,
   BackHandler,
 } from "react-native";
 import Animated, {
@@ -17,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
+import Loader from "../components/Loader";
 import { getRewardBalance } from "../lib/rewards";
 import { toast } from "../lib/toast";
 
@@ -65,8 +65,10 @@ export default function RewardsScreen() {
         message: err?.message || "Failed to load rewards",
       });
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setTimeout(() => {
+        setLoading(false);
+        setRefreshing(false);
+      }, 200);
     }
   };
 
@@ -108,6 +110,15 @@ export default function RewardsScreen() {
     if (diffDays < 7) return `${diffDays}d ago`;
     return date.toLocaleDateString();
   };
+
+  if (loading) {
+    return (
+      <Loader
+        message="Loading rewards"
+        subtitle="Fetching your points and transactions"
+      />
+    );
+  }
 
   return (
     <View className="flex-1 bg-background">

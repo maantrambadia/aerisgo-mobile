@@ -148,10 +148,7 @@ export default function RootLayout() {
           options={{ animation: "none", gestureEnabled: false }}
         />
         {/* Search Results */}
-        <Stack.Screen
-          name="search-results"
-          options={{ animation: "slide_from_right" }}
-        />
+        <Stack.Screen name="search-results" options={{ animation: "none" }} />
         {/* Auth */}
         <Stack.Screen
           name="(auth)/sign-up"

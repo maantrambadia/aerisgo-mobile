@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,11 +13,21 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import FormInput from "../components/FormInput";
 import PrimaryButton from "../components/PrimaryButton";
+import Loader from "../components/Loader";
 import { changePassword } from "../lib/profile";
 import { toast } from "../lib/toast";
 
 export default function ChangePassword() {
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Simulate brief initial load
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, []);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -71,6 +81,12 @@ export default function ChangePassword() {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <Loader message="Loading" subtitle="Preparing change password form" />
+    );
+  }
 
   return (
     <View className="flex-1 bg-background">
