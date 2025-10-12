@@ -151,13 +151,14 @@ const TicketResultCard = ({
   arriveTime = "11:30",
   duration = "--",
   priceInr = 0,
+  onPress,
 }) => {
   const priceText = useMemo(
     () => `₹ ${Number(priceInr || 0).toLocaleString("en-IN")}`,
     [priceInr]
   );
   return (
-    <View className="relative mt-4">
+    <Pressable onPress={onPress} className="relative mt-4">
       <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
         {/* Top row times/cities + arc */}
         <View className="flex-row items-center justify-between">
@@ -229,7 +230,7 @@ const TicketResultCard = ({
       {/* Ticket notches */}
       <Notch side="left" />
       <Notch side="right" />
-    </View>
+    </Pressable>
   );
 };
 
@@ -410,6 +411,23 @@ export default function SearchResults() {
                   arriveTime={fmtTime(f.arrivalTime)}
                   duration={fmtDuration(f.departureTime, f.arrivalTime)}
                   priceInr={f.baseFare}
+                  onPress={async () => {
+                    try {
+                      await Haptics.impactAsync(
+                        Haptics.ImpactFeedbackStyle.Medium
+                      );
+                    } catch {}
+                    router.push({
+                      pathname: "/flight-details",
+                      params: {
+                        flight: JSON.stringify(f),
+                        from,
+                        to,
+                        date,
+                        passengers,
+                      },
+                    });
+                  }}
                 />
               </Animated.View>
             ))
