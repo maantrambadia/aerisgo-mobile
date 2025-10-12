@@ -109,14 +109,6 @@ export default function RewardsScreen() {
     return date.toLocaleDateString();
   };
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#541424" />
-      </View>
-    );
-  }
-
   return (
     <View className="flex-1 bg-background">
       {/* Sticky Header */}
@@ -132,6 +124,58 @@ export default function RewardsScreen() {
         </Text>
       </Animated.View>
 
+      {/* Sticky Balance Card */}
+      <Animated.View
+        entering={FadeInDown.duration(600).delay(100).springify()}
+        className="mx-6 mb-6 overflow-hidden rounded-[36px] bg-primary border border-secondary/15"
+      >
+        <View className="p-6">
+          {/* Decorative circles */}
+          <View className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+          <View className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5" />
+
+          <View className="relative z-10">
+            <View className="flex-row items-center gap-2 mb-2">
+              <Ionicons name="gift" size={20} color="#e3d7cb" />
+              <Text className="text-text/80 font-urbanist text-sm">
+                Available Balance
+              </Text>
+            </View>
+            <Text className="text-5xl font-urbanist-bold text-text mb-6">
+              {balance.toLocaleString()}
+            </Text>
+
+            {/* Stats Row */}
+            <View className="flex-row justify-between">
+              <View>
+                <Text className="text-text/60 font-urbanist text-xs mb-1">
+                  Total Earned
+                </Text>
+                <Text className="text-text font-urbanist-semibold text-lg">
+                  {stats.totalEarned.toLocaleString()}
+                </Text>
+              </View>
+              <View>
+                <Text className="text-text/60 font-urbanist text-xs mb-1">
+                  Total Redeemed
+                </Text>
+                <Text className="text-text font-urbanist-semibold text-lg">
+                  {stats.totalRedeemed.toLocaleString()}
+                </Text>
+              </View>
+              <View>
+                <Text className="text-text/60 font-urbanist text-xs mb-1">
+                  Transactions
+                </Text>
+                <Text className="text-text font-urbanist-semibold text-lg">
+                  {stats.transactionCount}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -139,90 +183,21 @@ export default function RewardsScreen() {
         }
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Balance Card */}
+        {/* Recent Activity Header */}
         <Animated.View
-          entering={FadeInDown.delay(200)}
-          className="mx-6 mb-6 overflow-hidden rounded-[36px] bg-primary border border-secondary/15"
+          entering={FadeInDown.duration(400).delay(200).springify()}
+          className="mx-6 mb-4"
         >
-          <View className="p-6">
-            {/* Decorative circles */}
-            <View className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
-            <View className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5" />
-
-            <View className="relative z-10">
-              <View className="flex-row items-center gap-2 mb-2">
-                <Ionicons name="gift" size={20} color="#e3d7cb" />
-                <Text className="text-text/80 font-urbanist text-sm">
-                  Available Balance
-                </Text>
-              </View>
-              <Text className="text-5xl font-urbanist-bold text-text mb-6">
-                {balance.toLocaleString()}
-              </Text>
-
-              {/* Stats Row */}
-              <View className="flex-row justify-between">
-                <View>
-                  <Text className="text-text/60 font-urbanist text-xs mb-1">
-                    Total Earned
-                  </Text>
-                  <Text className="text-text font-urbanist-semibold text-lg">
-                    {stats.totalEarned.toLocaleString()}
-                  </Text>
-                </View>
-                <View>
-                  <Text className="text-text/60 font-urbanist text-xs mb-1">
-                    Total Redeemed
-                  </Text>
-                  <Text className="text-text font-urbanist-semibold text-lg">
-                    {stats.totalRedeemed.toLocaleString()}
-                  </Text>
-                </View>
-                <View>
-                  <Text className="text-text/60 font-urbanist text-xs mb-1">
-                    Transactions
-                  </Text>
-                  <Text className="text-text font-urbanist-semibold text-lg">
-                    {stats.transactionCount}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* Quick Actions */}
-        <Animated.View
-          entering={FadeInDown.delay(300)}
-          className="mx-6 mb-6 flex-row gap-3"
-        >
-          <Pressable className="flex-1 rounded-[28px] bg-primary/5 p-4 border border-primary/10">
-            <View className="h-12 w-12 rounded-full bg-primary/10 items-center justify-center mb-3">
-              <Ionicons name="airplane" size={24} color="#541424" />
-            </View>
-            <Text className="text-primary font-urbanist-semibold text-base mb-1">
-              Earn More
-            </Text>
-            <Text className="text-primary/60 font-urbanist text-xs">
-              Book flights to earn
-            </Text>
-          </Pressable>
-
-          <Pressable className="flex-1 rounded-[28px] bg-primary/5 p-4 border border-primary/10">
-            <View className="h-12 w-12 rounded-full bg-primary/10 items-center justify-center mb-3">
-              <Ionicons name="card" size={24} color="#541424" />
-            </View>
-            <Text className="text-primary font-urbanist-semibold text-base mb-1">
-              Redeem
-            </Text>
-            <Text className="text-primary/60 font-urbanist text-xs">
-              Use your points
-            </Text>
-          </Pressable>
+          <Text className="text-lg font-urbanist-bold text-primary">
+            Recent Activity
+          </Text>
         </Animated.View>
 
         {/* Filter Tabs */}
-        <Animated.View entering={FadeInDown.delay(400)} className="mx-6 mb-4">
+        <Animated.View
+          entering={FadeInDown.duration(400).delay(250).springify()}
+          className="mx-6 mb-4"
+        >
           <BlurView
             intensity={20}
             tint="light"
@@ -249,11 +224,10 @@ export default function RewardsScreen() {
         </Animated.View>
 
         {/* Transaction History */}
-        <Animated.View entering={FadeInDown.delay(500)} className="mx-6">
-          <Text className="text-lg font-urbanist-bold text-primary mb-4">
-            Recent Activity
-          </Text>
-
+        <Animated.View
+          entering={FadeInDown.duration(400).delay(300).springify()}
+          className="mx-6"
+        >
           {filteredTransactions.length === 0 ? (
             <View className="py-12 items-center">
               <Ionicons

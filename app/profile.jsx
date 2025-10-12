@@ -214,57 +214,57 @@ export default function Profile() {
         </Text>
       </Animated.View>
 
+      {/* Sticky Profile Card */}
+      <Animated.View
+        entering={FadeInDown.duration(600).delay(100).springify()}
+        className="mx-6 mb-6 bg-primary rounded-[36px] p-6 border border-secondary/15"
+      >
+        <View className="items-center">
+          {/* Avatar */}
+          <View className="w-24 h-24 rounded-full bg-secondary/20 items-center justify-center border-2 border-secondary/30 overflow-hidden mb-4">
+            {avatarSource ? (
+              <Image
+                source={avatarSource}
+                resizeMode="cover"
+                className="w-24 h-[93px] rounded-full mt-3 p-2"
+              />
+            ) : (
+              <Text className="text-secondary font-urbanist-bold text-4xl">
+                ?
+              </Text>
+            )}
+          </View>
+
+          {/* Name & Email */}
+          <Text className="text-secondary font-urbanist-bold text-2xl text-center">
+            {user?.name || "Traveler"}
+          </Text>
+          <Text className="text-secondary/80 font-urbanist-medium text-base mt-1">
+            {user?.email || "—"}
+          </Text>
+
+          {/* Info Pills */}
+          <View className="flex-row gap-3 mt-4">
+            <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
+              <Ionicons name="call" size={14} color="#e3d7cb" />
+              <Text className="text-secondary font-urbanist-medium text-sm">
+                {user?.phone || "—"}
+              </Text>
+            </View>
+            <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
+              <Ionicons name="person" size={14} color="#e3d7cb" />
+              <Text className="text-secondary font-urbanist-medium text-sm capitalize">
+                {user?.gender || "other"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Profile Picture & Info */}
-        <Animated.View
-          entering={FadeInDown.duration(600).delay(100).springify()}
-          className="mx-6 mb-6 bg-primary rounded-[36px] p-6 border border-secondary/15"
-        >
-          <View className="items-center">
-            {/* Avatar */}
-            <View className="w-24 h-24 rounded-full bg-secondary/20 items-center justify-center border-2 border-secondary/30 overflow-hidden mb-4">
-              {avatarSource ? (
-                <Image
-                  source={avatarSource}
-                  resizeMode="cover"
-                  className="w-24 h-[93px] rounded-full mt-3 p-2"
-                />
-              ) : (
-                <Text className="text-secondary font-urbanist-bold text-4xl">
-                  ?
-                </Text>
-              )}
-            </View>
-
-            {/* Name & Email */}
-            <Text className="text-secondary font-urbanist-bold text-2xl text-center">
-              {user?.name || "Traveler"}
-            </Text>
-            <Text className="text-secondary/80 font-urbanist-medium text-base mt-1">
-              {user?.email || "—"}
-            </Text>
-
-            {/* Info Pills */}
-            <View className="flex-row gap-3 mt-4">
-              <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
-                <Ionicons name="call" size={14} color="#e3d7cb" />
-                <Text className="text-secondary font-urbanist-medium text-sm">
-                  {user?.phone || "—"}
-                </Text>
-              </View>
-              <View className="bg-secondary/20 px-4 py-2 rounded-full flex-row items-center gap-2">
-                <Ionicons name="person" size={14} color="#e3d7cb" />
-                <Text className="text-secondary font-urbanist-medium text-sm capitalize">
-                  {user?.gender || "other"}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-
         {/* Profile Management Section */}
         <View className="px-6 mb-6">
           <Animated.Text
