@@ -3,7 +3,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -20,6 +19,7 @@ import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { searchFlightsApi } from "../lib/flights";
 import { toast } from "../lib/toast";
+import Loader from "../components/Loader";
 
 // Micro-interaction: press-scale wrapper used across header buttons and chips
 const ScaleOnPress = ({ children, className = "", onPress, ...rest }) => {
@@ -380,9 +380,8 @@ export default function SearchResults() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         >
           {loading ? (
-            <View className="mt-8 items-center justify-center">
-              <ActivityIndicator color="#541424" />
-              <Text className="text-primary/70 mt-3">Searching flights...</Text>
+            <View className="mt-8">
+              <Loader message="Searching flights" subtitle="Finding the best options for you" fullscreen={false} />
             </View>
           ) : error ? (
             <View className="mt-8 items-center justify-center">
