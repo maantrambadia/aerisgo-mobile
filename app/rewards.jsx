@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -5,21 +6,21 @@ import {
   RefreshControl,
   Pressable,
   ActivityIndicator,
+  BackHandler,
 } from "react-native";
-import { useState, useEffect, useCallback } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import Animated, {
   FadeInDown,
   FadeInUp,
   Layout,
 } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import api from "../lib/axios";
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
+import { useFocusEffect } from "@react-navigation/native";
+import { getRewardBalance } from "../lib/rewards";
+import { toast } from "../lib/toast";
 
 export default function RewardsScreen() {
-  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [balance, setBalance] = useState(0);
@@ -31,13 +32,25 @@ export default function RewardsScreen() {
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [filter, setFilter] = useState("all"); // all, earn, redeem
 
+  // Block Android hardware back from leaving the main tab
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => true;
+      const sub = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+      return () => sub.remove();
+    }, [])
+  );
+
   useEffect(() => {
     fetchRewards();
   }, []);
 
   const fetchRewards = async () => {
     try {
-      const { data } = await api.get("/rewards/balance");
+      const data = await getRewardBalance();
       setBalance(data.balance || 0);
       setStats({
         totalEarned: data.totalEarned || 0,
@@ -47,6 +60,10 @@ export default function RewardsScreen() {
       setRecentTransactions(data.recentTransactions || []);
     } catch (err) {
       console.error("Failed to fetch rewards:", err);
+      toast.error({
+        title: "Error",
+        message: err?.message || "Failed to load rewards",
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -59,7 +76,9 @@ export default function RewardsScreen() {
   }, []);
 
   const handleFilterPress = async (newFilter) => {
-    await Haptics.selectionAsync();
+    try {
+      await Haptics.selectionAsync();
+    } catch {}
     setFilter(newFilter);
   };
 
@@ -99,31 +118,31 @@ export default function RewardsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-background">
+      {/* Sticky Header */}
+      <Animated.View
+        entering={FadeInDown.duration(500).springify()}
+        className="px-6 pt-6 pb-4 bg-background"
+      >
+        <Text className="text-primary font-urbanist-bold text-3xl">
+          Rewards
+        </Text>
+        <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
+          Earn points with every flight
+        </Text>
+      </Animated.View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Header */}
-        <Animated.View
-          entering={FadeInDown.delay(100)}
-          className="px-6 pt-6 pb-4"
-        >
-          <Text className="text-3xl font-urbanist-bold text-primary">
-            Rewards
-          </Text>
-          <Text className="text-sm font-urbanist text-primary/60 mt-1">
-            Earn points with every flight
-          </Text>
-        </Animated.View>
-
         {/* Balance Card */}
         <Animated.View
           entering={FadeInDown.delay(200)}
-          className="mx-6 mb-6 overflow-hidden rounded-3xl bg-primary"
+          className="mx-6 mb-6 overflow-hidden rounded-[36px] bg-primary border border-secondary/15"
         >
           <View className="p-6">
             {/* Decorative circles */}
