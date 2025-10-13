@@ -113,7 +113,8 @@ export default function RootLayout() {
         pathname === "/search-results" ||
         pathname === "/profile" ||
         pathname === "/rewards" ||
-        pathname === "/booking-confirmation"
+        pathname === "/booking-confirmation" ||
+        pathname === "/tickets"
       }
     >
       <StatusBar style="dark" />

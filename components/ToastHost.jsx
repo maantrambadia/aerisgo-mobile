@@ -101,7 +101,13 @@ export default function ToastHost() {
   return (
     <View
       pointerEvents="box-none"
-      style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+      }}
     >
       <View
         pointerEvents="box-none"
