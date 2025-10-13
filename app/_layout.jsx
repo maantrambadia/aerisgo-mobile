@@ -121,8 +121,8 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           animation: "none",
-          gestureEnabled: true,
-          fullScreenGestureEnabled: true,
+          gestureEnabled: false,
+          fullScreenGestureEnabled: false,
         }}
       >
         {/* Welcome */}

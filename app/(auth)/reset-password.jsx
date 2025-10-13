@@ -90,6 +90,35 @@ export default function ResetPassword() {
 
   return (
     <View className="flex-1 bg-background">
+      {/* Fixed Header: Brand + Back */}
+      <Animated.View
+        entering={FadeInDown.duration(500).springify()}
+        className="px-6 pt-8 pb-4"
+      >
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            accessibilityLabel="Go back"
+            onPress={async () => {
+              try {
+                await Haptics.selectionAsync();
+              } catch {}
+              router.back();
+            }}
+            activeOpacity={0.8}
+            className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
+          >
+            <Ionicons name="chevron-back" size={22} color="#541424" />
+          </TouchableOpacity>
+          <Image
+            source={welcomeLogo}
+            resizeMode="contain"
+            accessibilityLabel="AerisGo logo"
+            className="w-28 h-8 ml-3"
+          />
+        </View>
+      </Animated.View>
+
+      {/* Scrollable Content */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -98,36 +127,8 @@ export default function ResetPassword() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          {/* Brand + Back */}
-          <Animated.View
-            entering={FadeInDown.duration(500).springify()}
-            className="px-6 pt-8"
-          >
-            <View className="flex-row items-center">
-              <TouchableOpacity
-                accessibilityLabel="Go back"
-                onPress={async () => {
-                  try {
-                    await Haptics.selectionAsync();
-                  } catch {}
-                  router.back();
-                }}
-                activeOpacity={0.8}
-                className="w-[40px] h-[40px] rounded-full bg-primary items-center justify-center pr-1"
-              >
-                <Ionicons name="chevron-back" size={25} color="white" />
-              </TouchableOpacity>
-              <Image
-                source={welcomeLogo}
-                resizeMode="contain"
-                accessibilityLabel="AerisGo logo"
-                className="w-28 h-8 ml-3"
-              />
-            </View>
-          </Animated.View>
-
           {/* Header */}
-          <View className="px-6 mt-8">
+          <View className="px-6 mt-4">
             <Animated.Text
               entering={FadeInDown.duration(550).delay(100).springify()}
               className="text-primary font-urbanist-bold text-3xl"
