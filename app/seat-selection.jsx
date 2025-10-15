@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
+  Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import Animated, {
   FadeInDown,
   FadeInUp,
   FadeInRight,
+  ZoomIn,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -23,6 +25,7 @@ import Loader from "../components/Loader";
 import PrimaryButton from "../components/PrimaryButton";
 import { toast } from "../lib/toast";
 import { apiFetch } from "../lib/api";
+import { getDocuments } from "../lib/profile";
 
 const ScaleOnPress = ({ children, className = "", onPress, ...rest }) => {
   const scale = useSharedValue(1);
@@ -125,6 +128,8 @@ export default function SeatSelection() {
   const [seats, setSeats] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [pricingConfig, setPricingConfig] = useState(null);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [hasDocuments, setHasDocuments] = useState(false);
 
   const flight = useMemo(() => {
     try {
@@ -144,6 +149,19 @@ export default function SeatSelection() {
   async function fetchData() {
     try {
       setLoading(true);
+
+      // Check if user has documents
+      const documentsRes = await getDocuments();
+      const userDocs = documentsRes.documents || [];
+
+      if (userDocs.length === 0) {
+        setLoading(false);
+        setHasDocuments(false);
+        setShowDocumentModal(true);
+        return;
+      }
+
+      setHasDocuments(true);
 
       // Check if user already has a booking on this flight
       const bookingsRes = await apiFetch("/bookings/my-bookings", {
@@ -659,6 +677,69 @@ export default function SeatSelection() {
           disabled={selectedSeats.length === 0}
         />
       </View>
+
+      {/* Document Required Modal */}
+      <Modal
+        visible={showDocumentModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
+          <Animated.View entering={ZoomIn.duration(400).springify()}>
+            <View className="bg-background rounded-[32px] border-2 border-primary/15 overflow-hidden">
+              <View className="p-8 items-center">
+                {/* Icon */}
+                <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center mb-5">
+                  <Ionicons name="document-text" size={48} color="#541424" />
+                </View>
+
+                {/* Title */}
+                <Text className="text-primary font-urbanist-bold text-2xl mb-2 text-center">
+                  Document Required
+                </Text>
+
+                {/* Subtitle */}
+                <Text className="text-primary/70 font-urbanist-medium text-base text-center mb-6">
+                  Please add your identification document (Aadhar or Passport)
+                  to continue booking
+                </Text>
+
+                {/* Buttons */}
+                <View className="w-full gap-3">
+                  <PrimaryButton
+                    title="Add Document"
+                    onPress={async () => {
+                      try {
+                        await Haptics.impactAsync(
+                          Haptics.ImpactFeedbackStyle.Medium
+                        );
+                      } catch {}
+                      setShowDocumentModal(false);
+                      router.push("/user-documents");
+                    }}
+                    leftIconName="add-circle"
+                  />
+                  <TouchableOpacity
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      setShowDocumentModal(false);
+                      router.back();
+                    }}
+                    className="bg-primary/10 rounded-[20px] py-4 items-center"
+                  >
+                    <Text className="text-primary font-urbanist-semibold text-base">
+                      Go Back
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -271,10 +271,21 @@ export default function BookingConfirmation() {
         router.replace("/tickets");
       }, 3000);
     } catch (err) {
-      toast.error({
-        title: "Booking Failed",
-        message: err?.message || "Failed to complete booking",
-      });
+      // Check if error is due to missing documents
+      if (err?.requiresDocument) {
+        toast.error({
+          title: "Document Required",
+          message: err?.message || "Please add your identification document",
+        });
+        setTimeout(() => {
+          router.push("/user-documents");
+        }, 2000);
+      } else {
+        toast.error({
+          title: "Booking Failed",
+          message: err?.message || "Failed to complete booking",
+        });
+      }
       setProcessing(false);
     }
   }
