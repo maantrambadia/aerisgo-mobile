@@ -222,7 +222,7 @@ export default function Tickets() {
             />
           ))
         )}
-        <View className="h-6" />
+        <View className="h-44" />
       </ScrollView>
 
       <BookingDetailsModal
