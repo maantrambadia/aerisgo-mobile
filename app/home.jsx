@@ -9,6 +9,8 @@ import {
   Image,
   ScrollView,
   Platform,
+  KeyboardAvoidingView,
+  Keyboard,
 } from "react-native";
 import Animated, {
   FadeInDown,
@@ -24,17 +26,25 @@ import { useFocusEffect } from "@react-navigation/native";
 import PrimaryButton from "../components/PrimaryButton";
 import Loader from "../components/Loader";
 import BottomSheetModal from "../components/BottomSheetModal";
+import FormInput from "../components/FormInput";
 import { router } from "expo-router";
 import { getUserProfile } from "../lib/storage";
 import { fetchMe } from "../lib/auth";
 import { toast } from "../lib/toast";
 import { COLORS } from "../constants/colors";
+import {
+  getAllAirports,
+  getPopularAirports,
+  formatAirport,
+  parseCityName,
+  searchAirports,
+} from "../lib/airports";
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [tripType, setTripType] = useState("oneway"); // roundtrip disabled
-  const [from, setFrom] = useState("Rajkot, India");
-  const [to, setTo] = useState("Mumbai, India");
+  const [from, setFrom] = useState("Ahmedabad (AMD)");
+  const [to, setTo] = useState("Mumbai (BOM)");
   const [travelDate, setTravelDate] = useState(new Date());
   const [pax, setPax] = useState({ adults: 1, children: 0 });
 
@@ -44,6 +54,13 @@ export default function Home() {
   const [showNativePicker, setShowNativePicker] = useState(false);
   const [showPaxModal, setShowPaxModal] = useState(false);
   const [user, setUser] = useState(null);
+
+  // Airports state
+  const [allAirports, setAllAirports] = useState([]);
+  const [popularAirports, setPopularAirports] = useState([]);
+  const [airportsLoading, setAirportsLoading] = useState(false);
+  const [fromSearchQuery, setFromSearchQuery] = useState("");
+  const [toSearchQuery, setToSearchQuery] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -60,6 +77,59 @@ export default function Home() {
       mounted = false;
     };
   }, []);
+
+  // Load airports data
+  const loadAirports = async () => {
+    try {
+      setAirportsLoading(true);
+      const [all, popular] = await Promise.all([
+        getAllAirports(),
+        getPopularAirports(),
+      ]);
+      setAllAirports(all);
+      setPopularAirports(popular);
+    } catch (error) {
+      console.error("Failed to load airports:", error);
+      toast.error({
+        title: "Error",
+        message: "Failed to load airports data",
+      });
+    } finally {
+      setAirportsLoading(false);
+    }
+  };
+
+  // Load airports when modal opens
+  useEffect(() => {
+    if ((showFromModal || showToModal) && allAirports.length === 0) {
+      loadAirports();
+    }
+  }, [showFromModal, showToModal]);
+
+  // Filter airports based on search query
+  const filteredFromAirports = useMemo(() => {
+    if (!fromSearchQuery.trim()) return allAirports;
+    const query = fromSearchQuery.toLowerCase();
+    return allAirports.filter(
+      (airport) =>
+        airport.city.toLowerCase().includes(query) ||
+        airport.code.toLowerCase().includes(query) ||
+        airport.name.toLowerCase().includes(query) ||
+        airport.state.toLowerCase().includes(query)
+    );
+  }, [allAirports, fromSearchQuery]);
+
+  const filteredToAirports = useMemo(() => {
+    if (!toSearchQuery.trim()) return allAirports;
+    const query = toSearchQuery.toLowerCase();
+    return allAirports.filter(
+      (airport) =>
+        airport.city.toLowerCase().includes(query) ||
+        airport.code.toLowerCase().includes(query) ||
+        airport.name.toLowerCase().includes(query) ||
+        airport.state.toLowerCase().includes(query)
+    );
+  }, [allAirports, toSearchQuery]);
 
   const displayName = user?.name || "Traveler";
   const avatarSource = useMemo(() => {
@@ -420,8 +490,9 @@ export default function Home() {
               try {
                 await Haptics.selectionAsync();
               } catch {}
-              const src = String(from || "").trim();
-              const dst = String(to || "").trim();
+              // Parse city names from "City (CODE)" format
+              const src = parseCityName(String(from || "").trim());
+              const dst = parseCityName(String(to || "").trim());
               if (!src || !dst) {
                 toast.warn({
                   title: "Route required",
@@ -468,93 +539,205 @@ export default function Home() {
       {/* Location modal - From */}
       <BottomSheetModal
         visible={showFromModal}
-        onClose={() => setShowFromModal(false)}
+        onClose={() => {
+          setShowFromModal(false);
+          setFromSearchQuery("");
+        }}
         title="Select origin"
-        maxHeight="70%"
+        maxHeight="75%"
+        keyboardAware={true}
       >
-        {/* Popular */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-3"
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {POPULAR_CITIES.map((c) => (
-            <ScaleOnPress
-              key={`pop-from-${c}`}
-              className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-              onPress={() => {
-                setFrom(c);
-                setShowFromModal(false);
-              }}
+        {airportsLoading ? (
+          <View className="py-8 items-center">
+            <Loader size="large" />
+            <Text className="text-primary/60 font-urbanist mt-2">
+              Loading airports...
+            </Text>
+          </View>
+        ) : (
+          <View className="flex-1">
+            {/* Search Input */}
+            <View className="mb-3">
+              <FormInput
+                placeholder="Search by city, code, or airport name"
+                value={fromSearchQuery}
+                onChangeText={setFromSearchQuery}
+                leftIconName="search"
+              />
+            </View>
+
+            {/* Popular - Only show when not searching */}
+            {!fromSearchQuery && popularAirports.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="mb-3"
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {popularAirports.map((airport) => (
+                  <ScaleOnPress
+                    key={`pop-from-${airport.code}`}
+                    className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setFrom(formatAirport(airport));
+                      setFromSearchQuery("");
+                      setTimeout(() => setShowFromModal(false), 100);
+                    }}
+                  >
+                    <Text className="text-primary text-xs font-urbanist-medium">
+                      {airport.city}
+                    </Text>
+                  </ScaleOnPress>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Filtered Airports */}
+            <ScrollView
+              style={{ maxHeight: 320 }}
+              keyboardShouldPersistTaps="always"
+              nestedScrollEnabled={true}
             >
-              <Text className="text-primary text-xs font-urbanist-medium">
-                {c}
-              </Text>
-            </ScaleOnPress>
-          ))}
-        </ScrollView>
-        {/* Results */}
-        <ScrollView style={{ maxHeight: 320 }}>
-          {CITY_OPTIONS.map((c) => (
-            <ScaleOnPress
-              key={`from-${c}`}
-              className="py-4 border-b border-primary/10"
-              onPress={() => {
-                setFrom(c);
-                setShowFromModal(false);
-              }}
-            >
-              <Text className="text-primary font-urbanist-medium">{c}</Text>
-            </ScaleOnPress>
-          ))}
-        </ScrollView>
+              {filteredFromAirports.length > 0 ? (
+                filteredFromAirports.map((airport) => (
+                  <TouchableOpacity
+                    key={`from-${airport.code}-${airport.city}`}
+                    className="py-4 border-b border-primary/10"
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setFrom(formatAirport(airport));
+                      setFromSearchQuery("");
+                      Keyboard.dismiss();
+                      setTimeout(() => setShowFromModal(false), 100);
+                    }}
+                  >
+                    <Text className="text-primary font-urbanist-semibold">
+                      {airport.city} ({airport.code})
+                    </Text>
+                    <Text className="text-primary/60 font-urbanist text-xs mt-0.5">
+                      {airport.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View className="py-8 items-center">
+                  <Ionicons
+                    name="search-outline"
+                    size={48}
+                    color="#541424"
+                    opacity={0.3}
+                  />
+                  <Text className="text-primary/60 font-urbanist mt-2">
+                    No airports found
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        )}
       </BottomSheetModal>
 
       {/* Location modal - To */}
       <BottomSheetModal
         visible={showToModal}
-        onClose={() => setShowToModal(false)}
+        onClose={() => {
+          setShowToModal(false);
+          setToSearchQuery("");
+        }}
         title="Select destination"
-        maxHeight="70%"
+        maxHeight="75%"
+        keyboardAware={true}
       >
-        {/* Popular */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-3"
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {POPULAR_CITIES.map((c) => (
-            <ScaleOnPress
-              key={`pop-to-${c}`}
-              className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-              onPress={() => {
-                setTo(c);
-                setShowToModal(false);
-              }}
+        {airportsLoading ? (
+          <View className="py-8 items-center">
+            <Loader size="large" />
+            <Text className="text-primary/60 font-urbanist mt-2">
+              Loading airports...
+            </Text>
+          </View>
+        ) : (
+          <View className="flex-1">
+            {/* Search Input */}
+            <View className="mb-3">
+              <FormInput
+                placeholder="Search by city, code, or airport name"
+                value={toSearchQuery}
+                onChangeText={setToSearchQuery}
+                leftIconName="search"
+              />
+            </View>
+
+            {/* Popular - Only show when not searching */}
+            {!toSearchQuery && popularAirports.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="mb-3"
+                contentContainerStyle={{ gap: 8 }}
+              >
+                {popularAirports.map((airport) => (
+                  <ScaleOnPress
+                    key={`pop-to-${airport.code}`}
+                    className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setTo(formatAirport(airport));
+                      setToSearchQuery("");
+                      setTimeout(() => setShowToModal(false), 100);
+                    }}
+                  >
+                    <Text className="text-primary text-xs font-urbanist-medium">
+                      {airport.city}
+                    </Text>
+                  </ScaleOnPress>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Filtered Airports */}
+            <ScrollView
+              style={{ maxHeight: 320 }}
+              keyboardShouldPersistTaps="always"
+              nestedScrollEnabled={true}
             >
-              <Text className="text-primary text-xs font-urbanist-medium">
-                {c}
-              </Text>
-            </ScaleOnPress>
-          ))}
-        </ScrollView>
-        {/* Results */}
-        <ScrollView style={{ maxHeight: 320 }}>
-          {CITY_OPTIONS.map((c) => (
-            <ScaleOnPress
-              key={`to-${c}`}
-              className="py-4 border-b border-primary/10"
-              onPress={() => {
-                setTo(c);
-                setShowToModal(false);
-              }}
-            >
-              <Text className="text-primary font-urbanist-medium">{c}</Text>
-            </ScaleOnPress>
-          ))}
-        </ScrollView>
+              {filteredToAirports.length > 0 ? (
+                filteredToAirports.map((airport) => (
+                  <TouchableOpacity
+                    key={`to-${airport.code}-${airport.city}`}
+                    className="py-4 border-b border-primary/10"
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setTo(formatAirport(airport));
+                      setToSearchQuery("");
+                      Keyboard.dismiss();
+                      setTimeout(() => setShowToModal(false), 100);
+                    }}
+                  >
+                    <Text className="text-primary font-urbanist-semibold">
+                      {airport.city} ({airport.code})
+                    </Text>
+                    <Text className="text-primary/60 font-urbanist text-xs mt-0.5">
+                      {airport.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View className="py-8 items-center">
+                  <Ionicons
+                    name="search-outline"
+                    size={48}
+                    color="#541424"
+                    opacity={0.3}
+                  />
+                  <Text className="text-primary/60 font-urbanist mt-2">
+                    No airports found
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        )}
       </BottomSheetModal>
 
       {/* Date modal */}
@@ -755,22 +938,3 @@ export default function Home() {
     </View>
   );
 }
-
-const CITY_OPTIONS = [
-  "Rajkot, India",
-  "Mumbai, India",
-  "Ahmedabad, India",
-  "Delhi, India",
-  "Bengaluru, India",
-  "Hyderabad, India",
-  "Chennai, India",
-  "Kolkata, India",
-];
-
-// Subset for quick access chips
-const POPULAR_CITIES = [
-  "Mumbai, India",
-  "Delhi, India",
-  "Bengaluru, India",
-  "Hyderabad, India",
-];
