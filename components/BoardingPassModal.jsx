@@ -57,7 +57,7 @@ export default function BoardingPassModal({ visible, onClose, booking }) {
       >
         <Animated.View
           entering={FadeInUp.duration(400).springify()}
-          className="bg-secondary rounded-[32px] overflow-hidden"
+          className="bg-background rounded-[32px] overflow-hidden"
         >
           {/* Header */}
           <View className="bg-primary px-6 py-5">
@@ -167,7 +167,7 @@ export default function BoardingPassModal({ visible, onClose, booking }) {
             {/* Barcode */}
             <View className="mt-6 h-16 rounded-2xl bg-primary/10 overflow-hidden">
               <View className="flex-row h-full items-end px-2">
-                {Array.from({ length: 40 }).map((_, i) => (
+                {Array.from({ length: 50 }).map((_, i) => (
                   <View
                     key={i}
                     className="bg-primary mr-1"

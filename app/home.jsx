@@ -7,7 +7,6 @@ import {
   StatusBar,
   Pressable,
   Image,
-  Modal,
   ScrollView,
   Platform,
 } from "react-native";
@@ -24,6 +23,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useFocusEffect } from "@react-navigation/native";
 import PrimaryButton from "../components/PrimaryButton";
 import Loader from "../components/Loader";
+import BottomSheetModal from "../components/BottomSheetModal";
 import { router } from "expo-router";
 import { getUserProfile } from "../lib/storage";
 import { fetchMe } from "../lib/auth";
@@ -466,371 +466,292 @@ export default function Home() {
       </Animated.View>
 
       {/* Location modal - From */}
-      <Modal
+      <BottomSheetModal
         visible={showFromModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFromModal(false)}
+        onClose={() => setShowFromModal(false)}
+        title="Select origin"
+        maxHeight="70%"
       >
-        <View className="flex-1 justify-end bg-black/30">
-          <Animated.View
-            entering={FadeInUp.duration(250).springify()}
-            className="bg-background rounded-t-3xl p-6"
-          >
-            {/* Handle + header */}
-            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-primary font-urbanist-bold text-xl">
-                Select origin
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowFromModal(false)}
-                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-              >
-                <Ionicons name="close" size={18} color="#541424" />
-              </TouchableOpacity>
-            </View>
-            {/* Popular */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="mt-3"
-              contentContainerStyle={{ gap: 8 }}
+        {/* Popular */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-3"
+          contentContainerStyle={{ gap: 8 }}
+        >
+          {POPULAR_CITIES.map((c) => (
+            <ScaleOnPress
+              key={`pop-from-${c}`}
+              className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+              onPress={() => {
+                setFrom(c);
+                setShowFromModal(false);
+              }}
             >
-              {POPULAR_CITIES.map((c) => (
-                <ScaleOnPress
-                  key={`pop-from-${c}`}
-                  className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-                  onPress={() => {
-                    setFrom(c);
-                    setShowFromModal(false);
-                  }}
-                >
-                  <Text className="text-primary text-xs font-urbanist-medium">
-                    {c}
-                  </Text>
-                </ScaleOnPress>
-              ))}
-            </ScrollView>
-            {/* Results */}
-            <ScrollView style={{ maxHeight: 320 }} className="mt-3">
-              {CITY_OPTIONS.map((c) => (
-                <ScaleOnPress
-                  key={`from-${c}`}
-                  className="py-4 border-b border-primary/10"
-                  onPress={() => {
-                    setFrom(c);
-                    setShowFromModal(false);
-                  }}
-                >
-                  <Text className="text-primary font-urbanist-medium">{c}</Text>
-                </ScaleOnPress>
-              ))}
-            </ScrollView>
-          </Animated.View>
-        </View>
-      </Modal>
+              <Text className="text-primary text-xs font-urbanist-medium">
+                {c}
+              </Text>
+            </ScaleOnPress>
+          ))}
+        </ScrollView>
+        {/* Results */}
+        <ScrollView style={{ maxHeight: 320 }}>
+          {CITY_OPTIONS.map((c) => (
+            <ScaleOnPress
+              key={`from-${c}`}
+              className="py-4 border-b border-primary/10"
+              onPress={() => {
+                setFrom(c);
+                setShowFromModal(false);
+              }}
+            >
+              <Text className="text-primary font-urbanist-medium">{c}</Text>
+            </ScaleOnPress>
+          ))}
+        </ScrollView>
+      </BottomSheetModal>
 
       {/* Location modal - To */}
-      <Modal
+      <BottomSheetModal
         visible={showToModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowToModal(false)}
+        onClose={() => setShowToModal(false)}
+        title="Select destination"
+        maxHeight="70%"
       >
-        <View className="flex-1 justify-end bg-black/30">
-          <Animated.View
-            entering={FadeInUp.duration(250).springify()}
-            className="bg-background rounded-t-3xl p-6"
-          >
-            {/* Handle + header */}
-            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-primary font-urbanist-bold text-xl">
-                Select destination
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowToModal(false)}
-                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-              >
-                <Ionicons name="close" size={18} color="#541424" />
-              </TouchableOpacity>
-            </View>
-            {/* Popular */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              className="mt-3"
-              contentContainerStyle={{ gap: 8 }}
+        {/* Popular */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-3"
+          contentContainerStyle={{ gap: 8 }}
+        >
+          {POPULAR_CITIES.map((c) => (
+            <ScaleOnPress
+              key={`pop-to-${c}`}
+              className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+              onPress={() => {
+                setTo(c);
+                setShowToModal(false);
+              }}
             >
-              {POPULAR_CITIES.map((c) => (
-                <ScaleOnPress
-                  key={`pop-to-${c}`}
-                  className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-                  onPress={() => {
-                    setTo(c);
-                    setShowToModal(false);
-                  }}
-                >
-                  <Text className="text-primary text-xs font-urbanist-medium">
-                    {c}
-                  </Text>
-                </ScaleOnPress>
-              ))}
-            </ScrollView>
-            {/* Results */}
-            <ScrollView style={{ maxHeight: 320 }} className="mt-3">
-              {CITY_OPTIONS.map((c) => (
-                <ScaleOnPress
-                  key={`to-${c}`}
-                  className="py-4 border-b border-primary/10"
-                  onPress={() => {
-                    setTo(c);
-                    setShowToModal(false);
-                  }}
-                >
-                  <Text className="text-primary font-urbanist-medium">{c}</Text>
-                </ScaleOnPress>
-              ))}
-            </ScrollView>
-          </Animated.View>
-        </View>
-      </Modal>
+              <Text className="text-primary text-xs font-urbanist-medium">
+                {c}
+              </Text>
+            </ScaleOnPress>
+          ))}
+        </ScrollView>
+        {/* Results */}
+        <ScrollView style={{ maxHeight: 320 }}>
+          {CITY_OPTIONS.map((c) => (
+            <ScaleOnPress
+              key={`to-${c}`}
+              className="py-4 border-b border-primary/10"
+              onPress={() => {
+                setTo(c);
+                setShowToModal(false);
+              }}
+            >
+              <Text className="text-primary font-urbanist-medium">{c}</Text>
+            </ScaleOnPress>
+          ))}
+        </ScrollView>
+      </BottomSheetModal>
 
       {/* Date modal */}
-      <Modal
+      <BottomSheetModal
         visible={showDateModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDateModal(false)}
+        onClose={() => {
+          setShowNativePicker(false);
+          setShowDateModal(false);
+        }}
+        title="Select date"
+        scrollable={false}
+        maxHeight="65%"
       >
-        <View className="flex-1 justify-end bg-black/30">
-          <Animated.View
-            entering={FadeInUp.duration(250).springify()}
-            className="bg-background rounded-t-3xl p-6"
+        {/* Quick picks */}
+        <View className="flex-row items-center gap-2 mt-1">
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={setDateToday}
           >
-            {/* Handle + header */}
-            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-primary font-urbanist-bold text-xl">
-                Select date
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
+            <Text className="text-primary text-xs font-urbanist-medium">
+              Today
+            </Text>
+          </ScaleOnPress>
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={setDateTomorrow}
+          >
+            <Text className="text-primary text-xs font-urbanist-medium">
+              Tomorrow
+            </Text>
+          </ScaleOnPress>
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={setDateWeekend}
+          >
+            <Text className="text-primary text-xs font-urbanist-medium">
+              Weekend
+            </Text>
+          </ScaleOnPress>
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={async () => {
+              try {
+                await Haptics.selectionAsync();
+              } catch {}
+              setShowNativePicker(true);
+            }}
+          >
+            <Text className="text-primary text-xs font-urbanist-medium">
+              Custom date
+            </Text>
+          </ScaleOnPress>
+        </View>
+        {showNativePicker ? (
+          <View className="mt-2">
+            <DateTimePicker
+              value={travelDate}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              minimumDate={todayMidnight}
+              themeVariant={Platform.OS === "ios" ? "light" : undefined}
+              textColor={Platform.OS === "ios" ? COLORS.primary : undefined}
+              accentColor={COLORS.primary}
+              onChange={(event, selectedDate) => {
+                if (Platform.OS === "android") {
                   setShowNativePicker(false);
-                  setShowDateModal(false);
-                }}
-                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-              >
-                <Ionicons name="close" size={18} color="#541424" />
-              </TouchableOpacity>
-            </View>
-            {/* Quick picks */}
-            <View className="flex-row items-center gap-2 mt-1">
-              <ScaleOnPress
-                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-                onPress={setDateToday}
-              >
-                <Text className="text-primary text-xs font-urbanist-medium">
-                  Today
-                </Text>
-              </ScaleOnPress>
-              <ScaleOnPress
-                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-                onPress={setDateTomorrow}
-              >
-                <Text className="text-primary text-xs font-urbanist-medium">
-                  Tomorrow
-                </Text>
-              </ScaleOnPress>
-              <ScaleOnPress
-                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-                onPress={setDateWeekend}
-              >
-                <Text className="text-primary text-xs font-urbanist-medium">
-                  Weekend
-                </Text>
-              </ScaleOnPress>
-              <ScaleOnPress
-                className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
-                onPress={async () => {
-                  try {
-                    await Haptics.selectionAsync();
-                  } catch {}
-                  setShowNativePicker(true);
-                }}
-              >
-                <Text className="text-primary text-xs font-urbanist-medium">
-                  Custom date
-                </Text>
-              </ScaleOnPress>
-            </View>
-            {showNativePicker ? (
-              <View className="mt-2">
-                <DateTimePicker
-                  value={travelDate}
-                  mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  minimumDate={todayMidnight}
-                  themeVariant={Platform.OS === "ios" ? "light" : undefined}
-                  textColor={Platform.OS === "ios" ? COLORS.primary : undefined}
-                  accentColor={COLORS.primary}
-                  onChange={(event, selectedDate) => {
-                    if (Platform.OS === "android") {
-                      setShowNativePicker(false);
-                    }
-                    if (selectedDate) {
-                      const d = new Date(selectedDate);
-                      d.setHours(0, 0, 0, 0);
-                      setTravelDate(d);
-                    }
-                  }}
-                />
-              </View>
-            ) : null}
-            <View className="flex-row items-center justify-between py-4">
-              <TouchableOpacity
-                disabled={isPrevDisabled}
-                className="px-4 py-3 rounded-full bg-primary/10"
-                style={{ opacity: isPrevDisabled ? 0.4 : 1 }}
-                onPress={() => {
-                  if (isPrevDisabled) return;
-                  setTravelDate((d) => {
-                    const nd = new Date(d);
-                    nd.setDate(nd.getDate() - 1);
-                    return nd;
-                  });
-                }}
-              >
-                <Ionicons name="chevron-back" size={20} color="#541424" />
-              </TouchableOpacity>
-              <Text
-                className="text-primary font-urbanist-bold text-lg"
-                numberOfLines={2}
-              >
-                {new Date(travelDate).toLocaleDateString(undefined, {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </Text>
-              <TouchableOpacity
-                className="px-4 py-3 rounded-full bg-primary/10"
-                onPress={() =>
-                  setTravelDate((d) => {
-                    const nd = new Date(d);
-                    nd.setDate(nd.getDate() + 1);
-                    return nd;
-                  })
                 }
-              >
-                <Ionicons name="chevron-forward" size={20} color="#541424" />
-              </TouchableOpacity>
-            </View>
-            <PrimaryButton
-              title="Done"
-              className="mt-2"
-              onPress={() => {
-                setShowNativePicker(false);
-                setShowDateModal(false);
+                if (selectedDate) {
+                  const d = new Date(selectedDate);
+                  d.setHours(0, 0, 0, 0);
+                  setTravelDate(d);
+                }
               }}
             />
-          </Animated.View>
+          </View>
+        ) : null}
+        <View className="flex-row items-center justify-between py-4">
+          <TouchableOpacity
+            disabled={isPrevDisabled}
+            className="px-4 py-3 rounded-full bg-primary/10"
+            style={{ opacity: isPrevDisabled ? 0.4 : 1 }}
+            onPress={() => {
+              if (isPrevDisabled) return;
+              setTravelDate((d) => {
+                const nd = new Date(d);
+                nd.setDate(nd.getDate() - 1);
+                return nd;
+              });
+            }}
+          >
+            <Ionicons name="chevron-back" size={20} color="#541424" />
+          </TouchableOpacity>
+          <Text
+            className="text-primary font-urbanist-bold text-lg"
+            numberOfLines={2}
+          >
+            {new Date(travelDate).toLocaleDateString(undefined, {
+              weekday: "long",
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
+          </Text>
+          <TouchableOpacity
+            className="px-4 py-3 rounded-full bg-primary/10"
+            onPress={() =>
+              setTravelDate((d) => {
+                const nd = new Date(d);
+                nd.setDate(nd.getDate() + 1);
+                return nd;
+              })
+            }
+          >
+            <Ionicons name="chevron-forward" size={20} color="#541424" />
+          </TouchableOpacity>
         </View>
-      </Modal>
+        <PrimaryButton
+          title="Done"
+          className="mt-2"
+          onPress={() => {
+            setShowNativePicker(false);
+            setShowDateModal(false);
+          }}
+        />
+      </BottomSheetModal>
 
       {/* Passenger modal */}
-      <Modal
+      <BottomSheetModal
         visible={showPaxModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPaxModal(false)}
+        onClose={() => setShowPaxModal(false)}
+        title="Passengers"
+        scrollable={false}
+        minHeight="40%"
+        maxHeight="50%"
       >
-        <View className="flex-1 justify-end bg-black/30">
-          <Animated.View
-            entering={FadeInUp.duration(250).springify()}
-            className="bg-background rounded-t-3xl p-6"
-          >
-            {/* Handle + header */}
-            <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-primary font-urbanist-bold text-xl">
-                Passengers
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowPaxModal(false)}
-                className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-              >
-                <Ionicons name="close" size={18} color="#541424" />
-              </TouchableOpacity>
-            </View>
-            <Text className="text-primary/70 mb-2">
-              Select the number of travelers
+        <Text className="text-primary/70 mb-4">
+          Select the number of travelers
+        </Text>
+        <View className="flex-row items-center justify-between py-3">
+          <Text className="text-primary font-urbanist-medium text-lg">
+            Adults
+          </Text>
+          <View className="flex-row items-center gap-4">
+            <TouchableOpacity
+              className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+              onPress={() =>
+                setPax((p) => ({ ...p, adults: Math.max(1, p.adults - 1) }))
+              }
+            >
+              <Ionicons name="remove" size={20} color="#541424" />
+            </TouchableOpacity>
+            <Text className="text-primary font-urbanist-bold text-lg">
+              {pax.adults}
             </Text>
-            <View className="flex-row items-center justify-between py-3">
-              <Text className="text-primary font-urbanist-medium text-lg">
-                Adults
-              </Text>
-              <View className="flex-row items-center gap-4">
-                <TouchableOpacity
-                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
-                  onPress={() =>
-                    setPax((p) => ({ ...p, adults: Math.max(1, p.adults - 1) }))
-                  }
-                >
-                  <Ionicons name="remove" size={20} color="#541424" />
-                </TouchableOpacity>
-                <Text className="text-primary font-urbanist-bold text-lg">
-                  {pax.adults}
-                </Text>
-                <TouchableOpacity
-                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
-                  onPress={() =>
-                    setPax((p) => ({ ...p, adults: p.adults + 1 }))
-                  }
-                >
-                  <Ionicons name="add" size={20} color="#541424" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View className="flex-row items-center justify-between py-3">
-              <Text className="text-primary font-urbanist-medium text-lg">
-                Children
-              </Text>
-              <View className="flex-row items-center gap-4">
-                <TouchableOpacity
-                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
-                  onPress={() =>
-                    setPax((p) => ({
-                      ...p,
-                      children: Math.max(0, p.children - 1),
-                    }))
-                  }
-                >
-                  <Ionicons name="remove" size={20} color="#541424" />
-                </TouchableOpacity>
-                <Text className="text-primary font-urbanist-bold text-lg">
-                  {pax.children}
-                </Text>
-                <TouchableOpacity
-                  className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
-                  onPress={() =>
-                    setPax((p) => ({ ...p, children: p.children + 1 }))
-                  }
-                >
-                  <Ionicons name="add" size={20} color="#541424" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            <PrimaryButton
-              title="Done"
-              className="mt-2"
-              onPress={() => setShowPaxModal(false)}
-            />
-          </Animated.View>
+            <TouchableOpacity
+              className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+              onPress={() => setPax((p) => ({ ...p, adults: p.adults + 1 }))}
+            >
+              <Ionicons name="add" size={20} color="#541424" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </Modal>
+        <View className="flex-row items-center justify-between py-3">
+          <Text className="text-primary font-urbanist-medium text-lg">
+            Children
+          </Text>
+          <View className="flex-row items-center gap-4">
+            <TouchableOpacity
+              className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+              onPress={() =>
+                setPax((p) => ({
+                  ...p,
+                  children: Math.max(0, p.children - 1),
+                }))
+              }
+            >
+              <Ionicons name="remove" size={20} color="#541424" />
+            </TouchableOpacity>
+            <Text className="text-primary font-urbanist-bold text-lg">
+              {pax.children}
+            </Text>
+            <TouchableOpacity
+              className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+              onPress={() =>
+                setPax((p) => ({ ...p, children: p.children + 1 }))
+              }
+            >
+              <Ionicons name="add" size={20} color="#541424" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <PrimaryButton
+          title="Done"
+          className="mt-4"
+          onPress={() => setShowPaxModal(false)}
+        />
+      </BottomSheetModal>
     </View>
   );
 }

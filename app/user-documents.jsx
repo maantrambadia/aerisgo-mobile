@@ -4,18 +4,18 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Modal,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
+import { useFocusEffect } from "@react-navigation/native";
 import FormInput from "../components/FormInput";
 import PrimaryButton from "../components/PrimaryButton";
 import Loader from "../components/Loader";
+import BottomSheetModal from "../components/BottomSheetModal";
 import { getDocuments, upsertDocument, deleteDocument } from "../lib/profile";
 import { toast } from "../lib/toast";
 
@@ -138,7 +138,9 @@ export default function UserDocuments() {
   };
 
   if (initialLoading) {
-    return <Loader message="Loading documents" subtitle="Fetching your documents" />;
+    return (
+      <Loader message="Loading documents" subtitle="Fetching your documents" />
+    );
   }
 
   return (
@@ -170,7 +172,7 @@ export default function UserDocuments() {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View className="px-6 mt-4">
-          {(
+          {
             <>
               {["aadhar", "passport"].map((type, idx) => {
                 const doc = documents.find((d) => d.documentType === type);
@@ -237,74 +239,57 @@ export default function UserDocuments() {
                 );
               })}
             </>
-          )}
+          }
         </View>
       </ScrollView>
 
       {/* Add/Edit Modal */}
-      <Modal
+      <BottomSheetModal
         visible={showModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowModal(false)}
+        onClose={() => setShowModal(false)}
+        title={editingType ? getDocumentLabel(editingType) : "Document"}
+        scrollable={false}
+        minHeight="40%"
+        maxHeight="50%"
       >
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
         >
-          <View className="flex-1 justify-end bg-black/30">
-            <Animated.View
-              entering={FadeInUp.duration(250).springify()}
-              className="bg-background rounded-t-3xl p-6"
-            >
-              {/* Handle */}
-              <View className="w-12 h-1.5 bg-primary/20 self-center rounded-full mb-3" />
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-primary font-urbanist-bold text-xl">
-                  {editingType ? getDocumentLabel(editingType) : "Document"}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setShowModal(false)}
-                  className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-                >
-                  <Ionicons name="close" size={18} color="#541424" />
-                </TouchableOpacity>
-              </View>
-
-              <FormInput
-                label="Document Number"
-                placeholder={
-                  editingType === "aadhar"
-                    ? "12 digits"
-                    : "1 letter + 7 digits (e.g., A1234567)"
+          <View className="flex-1">
+            <FormInput
+              label="Document Number"
+              placeholder={
+                editingType === "aadhar"
+                  ? "12 digits"
+                  : "1 letter + 7 digits (e.g., A1234567)"
+              }
+              value={documentNumber}
+              onChangeText={(text) => {
+                if (editingType === "aadhar") {
+                  setDocumentNumber(text.replace(/[^0-9]/g, ""));
+                } else {
+                  setDocumentNumber(text.toUpperCase());
                 }
-                value={documentNumber}
-                onChangeText={(text) => {
-                  if (editingType === "aadhar") {
-                    setDocumentNumber(text.replace(/[^0-9]/g, ""));
-                  } else {
-                    setDocumentNumber(text.toUpperCase());
-                  }
-                }}
-                leftIconName="card-outline"
-                keyboardType={editingType === "aadhar" ? "numeric" : "default"}
-                maxLength={editingType === "aadhar" ? 12 : 8}
-              />
+              }}
+              leftIconName="card-outline"
+              keyboardType={editingType === "aadhar" ? "numeric" : "default"}
+              maxLength={editingType === "aadhar" ? 12 : 8}
+            />
 
-              <View className="mt-4 mb-2">
-                <PrimaryButton
-                  title={saving ? "Saving..." : "Save Document"}
-                  onPress={handleSave}
-                  disabled={saving}
-                  withHaptics
-                  hapticStyle="medium"
-                  className="w-full"
-                />
-              </View>
-            </Animated.View>
+            <View className="mt-4 mb-2">
+              <PrimaryButton
+                title={saving ? "Saving..." : "Save Document"}
+                onPress={handleSave}
+                disabled={saving}
+                withHaptics
+                hapticStyle="medium"
+                className="w-full"
+              />
+            </View>
           </View>
         </KeyboardAvoidingView>
-      </Modal>
+      </BottomSheetModal>
     </View>
   );
 }
