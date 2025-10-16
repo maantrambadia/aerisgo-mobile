@@ -9,7 +9,6 @@ import {
   Image,
   ScrollView,
   Platform,
-  KeyboardAvoidingView,
   Keyboard,
 } from "react-native";
 import Animated, {
@@ -37,7 +36,6 @@ import {
   getPopularAirports,
   formatAirport,
   parseCityName,
-  searchAirports,
 } from "../lib/airports";
 
 export default function Home() {
@@ -104,6 +102,7 @@ export default function Home() {
     if ((showFromModal || showToModal) && allAirports.length === 0) {
       loadAirports();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFromModal, showToModal]);
 
   // Filter airports based on search query
@@ -250,19 +249,6 @@ export default function Home() {
   if (loading) {
     return <Loader message="Loading" subtitle="Preparing your flight search" />;
   }
-
-  const POPULAR_CITIES = [
-    "Mumbai, India",
-    "Delhi, India",
-    "Bangalore, India",
-    "Hyderabad, India",
-    "Ahmedabad, India",
-    "Chennai, India",
-    "Kolkata, India",
-    "Surat, India",
-    "Pune, India",
-    "Jaipur, India",
-  ];
 
   return (
     <View className="flex-1 bg-background">
