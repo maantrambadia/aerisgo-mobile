@@ -6,6 +6,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -72,27 +73,41 @@ export default function Tickets() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     } catch {}
 
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
-
-    try {
-      await cancelBooking(selectedBooking._id);
-      try {
-        await Haptics.notificationAsync(
-          Haptics.NotificationFeedbackType.Success
-        );
-      } catch {}
-      toast.success({
-        title: "Booking cancelled",
-        message: "Your booking has been cancelled successfully",
-      });
-      setShowDetailsModal(false);
-      fetchBookings();
-    } catch (err) {
-      toast.error({
-        title: "Cancellation failed",
-        message: err?.message || "Failed to cancel booking",
-      });
-    }
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this booking?",
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await cancelBooking(selectedBooking._id);
+              try {
+                await Haptics.notificationAsync(
+                  Haptics.NotificationFeedbackType.Success
+                );
+              } catch {}
+              toast.success({
+                title: "Booking cancelled",
+                message: "Your booking has been cancelled successfully",
+              });
+              setShowDetailsModal(false);
+              fetchBookings();
+            } catch (err) {
+              toast.error({
+                title: "Cancellation failed",
+                message: err?.message || "Failed to cancel booking",
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleBookingPress = async (booking) => {

@@ -11,7 +11,7 @@ const FormInput = ({
   secureTextEntry = false,
   keyboardType = "default",
   autoCapitalize = "none",
-  autoComplete = "off",
+  autoComplete,
   className = "",
   error = "",
   onFocus,

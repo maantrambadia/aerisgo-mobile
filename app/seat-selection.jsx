@@ -253,14 +253,13 @@ export default function SeatSelection() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.push({
-      pathname: "/booking-confirmation",
+      pathname: "/passenger-details",
       params: {
         flight: JSON.stringify(flight),
         seats: JSON.stringify(selectedSeats),
         from,
         to,
         date,
-        passengers,
       },
     });
   }

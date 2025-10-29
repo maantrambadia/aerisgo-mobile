@@ -153,9 +153,12 @@ export default function BookingDetailsModal({
             <View className="flex-row justify-between">
               <Text className="text-primary/60 font-urbanist text-sm">
                 Seat
+                {booking.passengers && booking.passengers.length > 1 ? "s" : ""}
               </Text>
               <Text className="text-primary font-urbanist-semibold">
-                {booking.seatNumber}
+                {booking.passengers && booking.passengers.length > 0
+                  ? booking.passengers.map((p) => p.seatNumber).join(", ")
+                  : booking.seatNumber}
               </Text>
             </View>
             <View className="flex-row justify-between">
@@ -178,6 +181,75 @@ export default function BookingDetailsModal({
             )}
           </View>
         </View>
+
+        {/* Passenger Details */}
+        {booking.passengers && booking.passengers.length > 0 && (
+          <View className="bg-primary/5 rounded-2xl p-4 mb-4">
+            <Text className="text-primary font-urbanist-bold text-base mb-3">
+              Passenger Details ({booking.passengers.length})
+            </Text>
+            {booking.passengers.map((passenger, index) => (
+              <View
+                key={index}
+                className={`${index > 0 ? "mt-3 pt-3 border-t border-primary/10" : ""}`}
+              >
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-primary font-urbanist-semibold">
+                    {passenger.fullName}
+                  </Text>
+                  {passenger.isPrimary && (
+                    <View className="px-2 py-1 rounded-full bg-primary/10">
+                      <Text className="text-primary font-urbanist-semibold text-xs">
+                        You
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text className="text-primary/60 font-urbanist text-sm mb-2">
+                  Seat {passenger.seatNumber} •{" "}
+                  {passenger.gender.charAt(0).toUpperCase() +
+                    passenger.gender.slice(1)}
+                </Text>
+                <View className="flex-row justify-between mb-1">
+                  <Text className="text-primary/60 font-urbanist text-xs">
+                    Document
+                  </Text>
+                  <Text className="text-primary font-urbanist-medium text-xs">
+                    {passenger.documentType.toUpperCase()}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-primary/60 font-urbanist text-xs">
+                    Document No.
+                  </Text>
+                  <Text className="text-primary font-urbanist-medium text-xs">
+                    {passenger.documentNumber}
+                  </Text>
+                </View>
+                {passenger.email && (
+                  <View className="flex-row justify-between mt-1">
+                    <Text className="text-primary/60 font-urbanist text-xs">
+                      Email
+                    </Text>
+                    <Text className="text-primary font-urbanist-medium text-xs">
+                      {passenger.email}
+                    </Text>
+                  </View>
+                )}
+                {passenger.phone && (
+                  <View className="flex-row justify-between mt-1">
+                    <Text className="text-primary/60 font-urbanist text-xs">
+                      Phone
+                    </Text>
+                    <Text className="text-primary font-urbanist-medium text-xs">
+                      {passenger.phone}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Price Breakdown */}
         <View className="bg-primary/5 rounded-2xl p-4 mb-4">
@@ -302,7 +374,7 @@ export default function BookingDetailsModal({
                 onCancel();
               }}
               activeOpacity={0.7}
-              className="bg-red-50 rounded-2xl px-4 py-3 flex-row items-center justify-center border border-red-200"
+              className="bg-red-50 rounded-full px-4 py-3 flex-row items-center justify-center border border-red-200 mt-3"
             >
               <Ionicons name="close-circle-outline" size={20} color="#dc2626" />
               <Text className="text-red-600 font-urbanist-semibold text-base ml-2">

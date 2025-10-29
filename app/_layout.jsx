@@ -91,7 +91,15 @@ export default function RootLayout() {
         pathname === "/home" ||
         pathname === "/tickets" ||
         pathname === "/rewards" ||
-        pathname === "/profile";
+        pathname === "/profile" ||
+        pathname === "/search-results" ||
+        pathname === "/flight-details" ||
+        pathname === "/seat-selection" ||
+        pathname === "/passenger-details" ||
+        pathname === "/booking-confirmation" ||
+        pathname === "/edit-profile" ||
+        pathname === "/change-password" ||
+        pathname === "/user-documents";
       if (token && isAuthRoute) {
         router.replace("/home");
       } else if (!token && isProtectedRoute) {
@@ -114,7 +122,8 @@ export default function RootLayout() {
         pathname === "/profile" ||
         pathname === "/rewards" ||
         pathname === "/booking-confirmation" ||
-        pathname === "/tickets"
+        pathname === "/tickets" ||
+        pathname === "/passenger-details"
       }
     >
       <StatusBar style="dark" />
@@ -164,6 +173,23 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="booking-confirmation"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="passenger-details"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        {/* Profile Screens */}
+        <Stack.Screen
+          name="edit-profile"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="change-password"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="user-documents"
           options={{ animation: "none", gestureEnabled: false }}
         />
         {/* Auth */}

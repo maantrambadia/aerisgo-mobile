@@ -121,7 +121,15 @@ export default function BookingConfirmation() {
     }
   }, [params.seats]);
 
-  const { from, to, date, passengers } = params;
+  const passengers = useMemo(() => {
+    try {
+      return JSON.parse(params.passengers || "[]");
+    } catch {
+      return [];
+    }
+  }, [params.passengers]);
+
+  const { from, to, date } = params;
 
   useEffect(() => {
     fetchInitialData();
@@ -250,6 +258,7 @@ export default function BookingConfirmation() {
         totalAmount: finalAmount,
         paymentMethod: "card",
         rewardPointsUsed: rewardPointsToUse,
+        passengers: passengers || [],
       };
 
       const res = await apiFetch("/bookings/create", {
@@ -460,7 +469,8 @@ export default function BookingConfirmation() {
                   {new Date(date).toLocaleDateString()}
                 </Text>
                 <Text className="text-text font-urbanist-semibold text-sm mt-0.5">
-                  {passengers} Passenger{passengers > 1 ? "s" : ""}
+                  {passengers.length} Passenger
+                  {passengers.length > 1 ? "s" : ""}
                 </Text>
               </View>
             </View>

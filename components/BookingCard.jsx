@@ -107,11 +107,20 @@ export default function BookingCard({ booking, onPress, delay = 0 }) {
           <View className="flex-row items-center justify-between mt-4 px-5 pb-3">
             <View>
               <Text className="text-text/70 font-urbanist-medium text-[10px]">
-                {flight.flightNumber} • Seat {booking.seatNumber}
+                {flight.flightNumber} •{" "}
+                {booking.passengers && booking.passengers.length > 0
+                  ? `${booking.passengers.length} Passenger${booking.passengers.length > 1 ? "s" : ""}`
+                  : `Seat ${booking.seatNumber}`}
               </Text>
               <Text className="text-text font-urbanist-bold text-lg mt-0.5">
                 {booking.travelClass.charAt(0).toUpperCase() +
                   booking.travelClass.slice(1)}
+                {booking.passengers && booking.passengers.length > 0 && (
+                  <Text className="text-[9px] font-urbanist-medium">
+                    {" "}
+                    ({booking.passengers.map((p) => p.seatNumber).join(", ")})
+                  </Text>
+                )}
               </Text>
             </View>
             <Text className="text-text font-urbanist-bold text-xl">
