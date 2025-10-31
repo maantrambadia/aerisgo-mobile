@@ -328,6 +328,21 @@ export default function SeatSelection() {
           );
         }
       },
+      onSeatCancelled: (data) => {
+        if (data.flightId !== flight._id) return;
+        // Booking was cancelled, seat becomes available again
+        setSeats((prevSeats) =>
+          prevSeats.map((s) =>
+            s.seatNumber === data.seatNumber ? { ...s, isAvailable: true } : s
+          )
+        );
+        // Remove from locked seats if it was locked
+        setLockedSeats((prev) => {
+          const newLocks = new Map(prev);
+          newLocks.delete(data.seatNumber);
+          return newLocks;
+        });
+      },
       onError: (error) => {
         console.error("Socket error:", error);
       },

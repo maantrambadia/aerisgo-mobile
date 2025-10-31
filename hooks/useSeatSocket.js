@@ -63,6 +63,11 @@ export const useSeatSocket = (flightId, handlers) => {
               handlersRef.current.onSeatExpired(data);
             }
           },
+          onSeatCancelled: (data) => {
+            if (mounted && handlersRef.current.onSeatCancelled) {
+              handlersRef.current.onSeatCancelled(data);
+            }
+          },
           onSeatStatus: (data) => {
             if (mounted && handlersRef.current.onSeatStatus) {
               handlersRef.current.onSeatStatus(data);
