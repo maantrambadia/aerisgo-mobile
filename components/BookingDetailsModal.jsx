@@ -356,13 +356,15 @@ export default function BookingDetailsModal({
 
         {/* Actions */}
         <View className="space-y-3">
-          {/* Boarding Pass Button */}
-          <PrimaryButton
-            title={canShowBoardingPass ? "View Boarding Pass" : "Boarding Pass"}
-            onPress={handleBoardingPassPress}
-            className="w-full"
-            withHaptics
-          />
+          {/* Boarding Pass Button - Only show when available */}
+          {canShowBoardingPass && (
+            <PrimaryButton
+              title="View Boarding Pass"
+              onPress={handleBoardingPassPress}
+              className="w-full"
+              withHaptics
+            />
+          )}
 
           {/* Cancel Button */}
           {canCancel && (
