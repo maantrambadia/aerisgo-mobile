@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { searchFlightsApi } from "../lib/flights";
 import { toast } from "../lib/toast";
 import Loader from "../components/Loader";
+import FilterSortModal from "../components/FilterSortModal";
 
 // Micro-interaction: press-scale wrapper used across header buttons and chips
 const ScaleOnPress = ({ children, className = "", onPress, ...rest }) => {
@@ -241,6 +242,8 @@ export default function SearchResults() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [flights, setFlights] = useState([]);
+  const [sortBy, setSortBy] = useState("price-low");
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -268,10 +271,48 @@ export default function SearchResults() {
     };
   }, [from, to, date, passengers]);
 
+  // Sort flights based on selected option
+  const sortedFlights = useMemo(() => {
+    const flightsCopy = [...flights];
+
+    switch (sortBy) {
+      case "price-low":
+        return flightsCopy.sort(
+          (a, b) => (a.baseFare || 0) - (b.baseFare || 0)
+        );
+      case "price-high":
+        return flightsCopy.sort(
+          (a, b) => (b.baseFare || 0) - (a.baseFare || 0)
+        );
+      case "duration-short":
+        return flightsCopy.sort((a, b) => {
+          const durationA = new Date(a.arrivalTime) - new Date(a.departureTime);
+          const durationB = new Date(b.arrivalTime) - new Date(b.departureTime);
+          return durationA - durationB;
+        });
+      case "duration-long":
+        return flightsCopy.sort((a, b) => {
+          const durationA = new Date(a.arrivalTime) - new Date(a.departureTime);
+          const durationB = new Date(b.arrivalTime) - new Date(b.departureTime);
+          return durationB - durationA;
+        });
+      case "departure-early":
+        return flightsCopy.sort(
+          (a, b) => new Date(a.departureTime) - new Date(b.departureTime)
+        );
+      case "departure-late":
+        return flightsCopy.sort(
+          (a, b) => new Date(b.departureTime) - new Date(a.departureTime)
+        );
+      default:
+        return flightsCopy;
+    }
+  }, [flights, sortBy]);
+
   const countText = useMemo(() => {
-    const n = flights.length;
+    const n = sortedFlights.length;
     return `${n} ${n === 1 ? "Flight" : "Flights"}`;
-  }, [flights.length]);
+  }, [sortedFlights.length]);
 
   function fmtTime(t) {
     try {
@@ -362,11 +403,15 @@ export default function SearchResults() {
         <View className="flex-row items-center gap-3">
           <Chip label="Economy" variant="primary" />
           <Chip
-            label="Modify"
+            label="Sort"
             icon="options-outline"
             variant="ghost"
-            disabled
-            disabledMessage="Modify is currently disabled. This feature will be available soon."
+            onPress={async () => {
+              try {
+                await Haptics.selectionAsync();
+              } catch {}
+              setShowFilterModal(true);
+            }}
           />
         </View>
       </Animated.View>
@@ -393,12 +438,12 @@ export default function SearchResults() {
             <View className="mt-8 items-center justify-center">
               <Text className="text-primary text-center px-6">{error}</Text>
             </View>
-          ) : flights.length === 0 ? (
+          ) : sortedFlights.length === 0 ? (
             <View className="mt-8 items-center justify-center">
               <Text className="text-primary/80">No flights found</Text>
             </View>
           ) : (
-            flights.map((f, i) => (
+            sortedFlights.map((f, i) => (
               <Animated.View
                 key={i}
                 entering={FadeInUp.duration(600)
@@ -435,6 +480,14 @@ export default function SearchResults() {
           )}
         </ScrollView>
       </Animated.View>
+
+      {/* Filter/Sort Modal */}
+      <FilterSortModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
     </View>
   );
 }
