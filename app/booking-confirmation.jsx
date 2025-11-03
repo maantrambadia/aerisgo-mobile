@@ -16,6 +16,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -457,8 +458,8 @@ export default function BookingConfirmation() {
     <View className="flex-1 bg-background">
       {/* Header */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-6 pb-4"
       >
         <View className="flex-row items-center justify-between">
           <TouchableOpacity
@@ -490,359 +491,351 @@ export default function BookingConfirmation() {
         </View>
       </Animated.View>
 
-      {/* Title + Route */}
+      {/* Grouped Content Animation */}
       <Animated.View
-        entering={FadeInDown.duration(550).delay(80).springify()}
-        className="px-6 mt-4"
+        entering={FadeInUp.duration(400)
+          .delay(100)
+          .easing(Easing.out(Easing.cubic))}
+        className="flex-1"
       >
-        <View className="flex-row items-start justify-between">
-          <View style={{ maxWidth: "60%" }}>
-            <Text className="text-primary font-urbanist-bold text-3xl leading-9">
-              Review &
-            </Text>
-            <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
-              Confirm
-            </Text>
-            {isRoundTrip && (
-              <Text className="text-primary/60 font-urbanist-medium text-sm mt-1">
-                Round Trip
+        {/* Title + Route */}
+        <View className="px-6 mt-4">
+          <View className="flex-row items-start justify-between">
+            <View style={{ maxWidth: "60%" }}>
+              <Text className="text-primary font-urbanist-bold text-3xl leading-9">
+                Review &
               </Text>
-            )}
-          </View>
-          <RoutePill from={from} to={to} />
-        </View>
-      </Animated.View>
-
-      {/* Flight Ticket Card - Sticky */}
-      <Animated.View
-        entering={FadeInUp.duration(600).delay(120).springify()}
-        className="px-6 mt-4 mb-3"
-      >
-        <View className="relative">
-          <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
-            {/* Top row times/cities + arc */}
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-text/90 font-urbanist-semibold text-[11px]">
-                  {from}
+              <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
+                Confirm
+              </Text>
+              {isRoundTrip && (
+                <Text className="text-primary/60 font-urbanist-medium text-sm mt-1">
+                  Round Trip
                 </Text>
-                <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                  {fmtTime(currentFlight.departureTime)}
-                </Text>
-              </View>
-
-              {/* Arc with plane */}
-              <View style={{ width: 110, alignItems: "center" }}>
-                <View
-                  style={{
-                    width: 100,
-                    height: 44,
-                    overflow: "hidden",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 100,
-                      height: 100,
-                      borderRadius: 50,
-                      borderWidth: 1,
-                      borderStyle: "dashed",
-                      borderColor: "rgba(227,215,203,0.45)",
-                    }}
-                  />
-                </View>
-                <View className="w-9 h-9 rounded-full items-center justify-center border border-text/40 -mt-6 bg-primary">
-                  <Ionicons
-                    name="airplane"
-                    size={16}
-                    color="#e3d7cb"
-                    style={{ transform: [{ rotate: "90deg" }] }}
-                  />
-                </View>
-              </View>
-
-              <View className="items-end">
-                <Text className="text-text/90 font-urbanist-semibold text-[11px]">
-                  {to}
-                </Text>
-                <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                  {fmtTime(currentFlight.arrivalTime)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Duration */}
-            <Text className="text-text/70 font-urbanist-medium text-[11px] text-center mt-2">
-              {fmtDuration(
-                currentFlight.departureTime,
-                currentFlight.arrivalTime
               )}
-            </Text>
-
-            {/* Bottom brand/price bar */}
-            <View className="flex-row items-center justify-between mt-4">
-              <View>
-                <Text className="text-text font-urbanist-bold text-2xl">
-                  AerisGo
-                </Text>
-                <Text className="text-text/70 font-urbanist-medium text-xs mt-0.5">
-                  {currentFlight.flightNumber || "AG-101"}
-                </Text>
-              </View>
-              <View className="items-end">
-                <Text className="text-text/70 font-urbanist-medium text-xs">
-                  {isRoundTrip
-                    ? "Round Trip"
-                    : new Date(date).toLocaleDateString()}
-                </Text>
-                <Text className="text-text font-urbanist-semibold text-sm mt-0.5">
-                  {passengers.length} Passenger
-                  {passengers.length > 1 ? "s" : ""}
-                </Text>
-              </View>
             </View>
+            <RoutePill from={from} to={to} />
           </View>
-
-          {/* Ticket notches */}
-          <Notch side="left" />
-          <Notch side="right" />
         </View>
-      </Animated.View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-      >
-        {/* Selected Seats */}
-        <Animated.View
-          entering={FadeInUp.duration(600).delay(160).springify()}
-          className="px-6 mt-6"
-        >
-          <Text className="text-primary font-urbanist-bold text-base mb-3">
-            Selected Seats
-          </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {allSeats.map((seat, i) => {
-              const classColor =
-                seat.travelClass === "first"
-                  ? "#a855f7"
-                  : seat.travelClass === "business"
-                    ? "#3b82f6"
-                    : "#6b7280";
-              return (
-                <Animated.View
-                  key={i}
-                  entering={ZoomIn.duration(400).delay(200 + i * 50)}
-                >
-                  <View className="bg-secondary/40 rounded-[16px] px-4 py-3 flex-row items-center gap-3 border border-primary/10">
+        {/* Flight Ticket Card with Border */}
+        <View className="mt-4 pb-4 border-b border-primary/10 ">
+          <View className="px-6">
+            <View className="relative">
+              <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
+                {/* Top row times/cities + arc */}
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-text/90 font-urbanist-semibold text-[11px]">
+                      {from}
+                    </Text>
+                    <Text className="text-text font-urbanist-bold text-2xl mt-1">
+                      {fmtTime(currentFlight.departureTime)}
+                    </Text>
+                  </View>
+
+                  {/* Arc with plane */}
+                  <View style={{ width: 110, alignItems: "center" }}>
                     <View
-                      className="w-10 h-10 rounded-xl items-center justify-center"
-                      style={{ backgroundColor: classColor }}
+                      style={{
+                        width: 100,
+                        height: 44,
+                        overflow: "hidden",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                      }}
                     >
-                      <Text className="text-white font-urbanist-bold text-sm">
-                        {seat.seatNumber}
-                      </Text>
+                      <View
+                        style={{
+                          width: 100,
+                          height: 100,
+                          borderRadius: 50,
+                          borderWidth: 1,
+                          borderStyle: "dashed",
+                          borderColor: "rgba(227,215,203,0.45)",
+                        }}
+                      />
                     </View>
-                    <View>
-                      <Text className="text-primary font-urbanist-semibold text-sm capitalize">
-                        {seat.travelClass}
-                      </Text>
-                      {seat.isExtraLegroom && (
-                        <Text className="text-yellow-600 font-urbanist-medium text-[10px]">
-                          Extra Legroom
-                        </Text>
-                      )}
+                    <View className="w-9 h-9 rounded-full items-center justify-center border border-text/40 -mt-6 bg-primary">
+                      <Ionicons
+                        name="airplane"
+                        size={16}
+                        color="#e3d7cb"
+                        style={{ transform: [{ rotate: "90deg" }] }}
+                      />
                     </View>
                   </View>
-                </Animated.View>
-              );
-            })}
-          </View>
-        </Animated.View>
 
-        {/* Price Breakdown */}
-        <Animated.View
-          entering={FadeInUp.duration(600).delay(200).springify()}
-          className="px-6 mt-6"
-        >
-          <Text className="text-primary font-urbanist-bold text-base mb-3">
-            Price Summary
-          </Text>
-          <View className="bg-secondary/40 rounded-[24px] p-5 border border-primary/10">
-            {/* Subtotal */}
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-primary/70 font-urbanist-medium text-sm">
-                Subtotal ({allSeats.length} seat{allSeats.length > 1 ? "s" : ""}
-                )
-              </Text>
-              <Text className="text-primary font-urbanist-semibold text-sm">
-                ₹ {pricing.subtotal.toLocaleString("en-IN")}
-              </Text>
+                  <View className="items-end">
+                    <Text className="text-text/90 font-urbanist-semibold text-[11px]">
+                      {to}
+                    </Text>
+                    <Text className="text-text font-urbanist-bold text-2xl mt-1">
+                      {fmtTime(currentFlight.arrivalTime)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Duration */}
+                <Text className="text-text/70 font-urbanist-medium text-[11px] text-center mt-2">
+                  {fmtDuration(
+                    currentFlight.departureTime,
+                    currentFlight.arrivalTime
+                  )}
+                </Text>
+
+                {/* Bottom brand/price bar */}
+                <View className="flex-row items-center justify-between mt-4">
+                  <View>
+                    <Text className="text-text font-urbanist-bold text-2xl">
+                      AerisGo
+                    </Text>
+                    <Text className="text-text/70 font-urbanist-medium text-xs mt-0.5">
+                      {currentFlight.flightNumber || "AG-101"}
+                    </Text>
+                  </View>
+                  <View className="items-end">
+                    <Text className="text-text/70 font-urbanist-medium text-xs">
+                      {isRoundTrip
+                        ? "Round Trip"
+                        : new Date(date).toLocaleDateString()}
+                    </Text>
+                    <Text className="text-text font-urbanist-semibold text-sm mt-0.5">
+                      {passengers.length} Passenger
+                      {passengers.length > 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Ticket notches */}
+              <Notch side="left" />
+              <Notch side="right" />
             </View>
+          </View>
+        </View>
 
-            {/* Extra Legroom */}
-            {pricing.extraLegroomTotal > 0 && (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        >
+          {/* Selected Seats */}
+          <View className="px-6 mt-6">
+            <Text className="text-primary font-urbanist-bold text-base mb-3">
+              Selected Seats
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {allSeats.map((seat, i) => {
+                const classColor =
+                  seat.travelClass === "first"
+                    ? "#a855f7"
+                    : seat.travelClass === "business"
+                      ? "#3b82f6"
+                      : "#6b7280";
+                return (
+                  <Animated.View key={i}>
+                    <View className="bg-secondary/40 rounded-[16px] px-4 py-3 flex-row items-center gap-3 border border-primary/10">
+                      <View
+                        className="w-10 h-10 rounded-xl items-center justify-center"
+                        style={{ backgroundColor: classColor }}
+                      >
+                        <Text className="text-white font-urbanist-bold text-sm">
+                          {seat.seatNumber}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text className="text-primary font-urbanist-semibold text-sm capitalize">
+                          {seat.travelClass}
+                        </Text>
+                        {seat.isExtraLegroom && (
+                          <Text className="text-yellow-600 font-urbanist-medium text-[10px]">
+                            Extra Legroom
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Price Breakdown */}
+          <View className="px-6 mt-6">
+            <Text className="text-primary font-urbanist-bold text-base mb-3">
+              Price Summary
+            </Text>
+            <View className="bg-secondary/40 rounded-[24px] p-5 border border-primary/10">
+              {/* Subtotal */}
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-primary/70 font-urbanist-medium text-sm">
-                  Extra Legroom
+                  Subtotal ({allSeats.length} seat
+                  {allSeats.length > 1 ? "s" : ""})
                 </Text>
                 <Text className="text-primary font-urbanist-semibold text-sm">
-                  ₹ {pricing.extraLegroomTotal.toLocaleString("en-IN")}
+                  ₹ {pricing.subtotal.toLocaleString("en-IN")}
                 </Text>
               </View>
-            )}
 
-            {/* GST */}
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-primary/70 font-urbanist-medium text-sm">
-                GST (5%)
-              </Text>
-              <Text className="text-primary font-urbanist-semibold text-sm">
-                ₹ {pricing.gst.toLocaleString("en-IN")}
-              </Text>
-            </View>
-
-            {/* Fuel Surcharge */}
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-primary/70 font-urbanist-medium text-sm">
-                Fuel Surcharge (3%)
-              </Text>
-              <Text className="text-primary font-urbanist-semibold text-sm">
-                ₹ {pricing.fuelSurcharge.toLocaleString("en-IN")}
-              </Text>
-            </View>
-
-            {/* Airport Fee */}
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-primary/70 font-urbanist-medium text-sm">
-                Airport Fee
-              </Text>
-              <Text className="text-primary font-urbanist-semibold text-sm">
-                ₹ {pricing.airportFee.toLocaleString("en-IN")}
-              </Text>
-            </View>
-
-            <View className="h-px bg-primary/20 my-2" />
-
-            {/* Total */}
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-primary font-urbanist-bold text-base">
-                Total Amount
-              </Text>
-              <Text className="text-primary font-urbanist-bold text-lg">
-                ₹ {pricing.total.toLocaleString("en-IN")}
-              </Text>
-            </View>
-
-            {/* Rewards Section */}
-            {rewardBalance > 0 && (
-              <>
-                <View className="h-px bg-primary/20 my-2" />
-                {rewardPointsToUse === 0 ? (
-                  <ScaleOnPress
-                    onPress={handleUseRewards}
-                    className="bg-primary/10 rounded-[16px] p-3 flex-row items-center justify-between border border-primary/15"
-                  >
-                    <View className="flex-row items-center gap-2">
-                      <Ionicons name="gift" size={18} color="#541424" />
-                      <View>
-                        <Text className="text-primary font-urbanist-semibold text-sm">
-                          Use Reward Points
-                        </Text>
-                        <Text className="text-primary/60 font-urbanist-medium text-xs">
-                          {rewardBalance} points available
-                        </Text>
-                      </View>
-                    </View>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color="#541424"
-                    />
-                  </ScaleOnPress>
-                ) : (
-                  <View className="bg-green-500/10 rounded-[16px] p-3 border border-green-500/20">
-                    <View className="flex-row items-center justify-between mb-2">
-                      <View className="flex-row items-center gap-2">
-                        <Ionicons name="gift" size={18} color="#10b981" />
-                        <Text className="text-green-700 font-urbanist-semibold text-sm">
-                          Rewards Applied
-                        </Text>
-                      </View>
-                      <TouchableOpacity onPress={handleRemoveRewards}>
-                        <Ionicons
-                          name="close-circle"
-                          size={20}
-                          color="#10b981"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-green-700/70 font-urbanist-medium text-sm">
-                        {rewardPointsToUse} points used
-                      </Text>
-                      <Text className="text-green-700 font-urbanist-bold text-sm">
-                        - ₹ {rewardPointsToUse.toLocaleString("en-IN")}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-              </>
-            )}
-
-            {/* Final Amount */}
-            {rewardPointsToUse > 0 && (
-              <>
-                <View className="h-px bg-primary/20 my-3" />
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-primary font-urbanist-bold text-lg">
-                    Final Amount
+              {/* Extra Legroom */}
+              {pricing.extraLegroomTotal > 0 && (
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-primary/70 font-urbanist-medium text-sm">
+                    Extra Legroom
                   </Text>
-                  <Text className="text-primary font-urbanist-bold text-2xl">
-                    ₹ {finalAmount.toLocaleString("en-IN")}
+                  <Text className="text-primary font-urbanist-semibold text-sm">
+                    ₹ {pricing.extraLegroomTotal.toLocaleString("en-IN")}
                   </Text>
                 </View>
-              </>
-            )}
-          </View>
-        </Animated.View>
+              )}
 
-        {/* Total Amount & Payment Button - At Bottom of ScrollView */}
-        <Animated.View
-          entering={FadeInUp.duration(600).delay(240).springify()}
-          className="px-6 mt-6"
-        >
-          <View className="bg-secondary/40 rounded-[20px] p-3 mb-3 border border-primary/10">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-primary/70 font-urbanist-medium text-sm">
-                {rewardPointsToUse > 0 ? "Final Amount" : "Total Amount"}
-              </Text>
-              <Text className="text-primary font-urbanist-bold text-xl">
-                ₹{" "}
-                {(rewardPointsToUse > 0
-                  ? finalAmount
-                  : pricing.total
-                ).toLocaleString("en-IN")}
-              </Text>
+              {/* GST */}
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-primary/70 font-urbanist-medium text-sm">
+                  GST (5%)
+                </Text>
+                <Text className="text-primary font-urbanist-semibold text-sm">
+                  ₹ {pricing.gst.toLocaleString("en-IN")}
+                </Text>
+              </View>
+
+              {/* Fuel Surcharge */}
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-primary/70 font-urbanist-medium text-sm">
+                  Fuel Surcharge (3%)
+                </Text>
+                <Text className="text-primary font-urbanist-semibold text-sm">
+                  ₹ {pricing.fuelSurcharge.toLocaleString("en-IN")}
+                </Text>
+              </View>
+
+              {/* Airport Fee */}
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-primary/70 font-urbanist-medium text-sm">
+                  Airport Fee
+                </Text>
+                <Text className="text-primary font-urbanist-semibold text-sm">
+                  ₹ {pricing.airportFee.toLocaleString("en-IN")}
+                </Text>
+              </View>
+
+              <View className="h-px bg-primary/20 my-2" />
+
+              {/* Total */}
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-primary font-urbanist-bold text-base">
+                  Total Amount
+                </Text>
+                <Text className="text-primary font-urbanist-bold text-lg">
+                  ₹ {pricing.total.toLocaleString("en-IN")}
+                </Text>
+              </View>
+
+              {/* Rewards Section */}
+              {rewardBalance > 0 && (
+                <>
+                  <View className="h-px bg-primary/20 my-2" />
+                  {rewardPointsToUse === 0 ? (
+                    <ScaleOnPress
+                      onPress={handleUseRewards}
+                      className="bg-primary/10 rounded-[16px] p-3 flex-row items-center justify-between border border-primary/15"
+                    >
+                      <View className="flex-row items-center gap-2">
+                        <Ionicons name="gift" size={18} color="#541424" />
+                        <View>
+                          <Text className="text-primary font-urbanist-semibold text-sm">
+                            Use Reward Points
+                          </Text>
+                          <Text className="text-primary/60 font-urbanist-medium text-xs">
+                            {rewardBalance} points available
+                          </Text>
+                        </View>
+                      </View>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={18}
+                        color="#541424"
+                      />
+                    </ScaleOnPress>
+                  ) : (
+                    <View className="bg-green-500/10 rounded-[16px] p-3 border border-green-500/20">
+                      <View className="flex-row items-center justify-between mb-2">
+                        <View className="flex-row items-center gap-2">
+                          <Ionicons name="gift" size={18} color="#10b981" />
+                          <Text className="text-green-700 font-urbanist-semibold text-sm">
+                            Rewards Applied
+                          </Text>
+                        </View>
+                        <TouchableOpacity onPress={handleRemoveRewards}>
+                          <Ionicons
+                            name="close-circle"
+                            size={20}
+                            color="#10b981"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      <View className="flex-row items-center justify-between">
+                        <Text className="text-green-700/70 font-urbanist-medium text-sm">
+                          {rewardPointsToUse} points used
+                        </Text>
+                        <Text className="text-green-700 font-urbanist-bold text-sm">
+                          - ₹ {rewardPointsToUse.toLocaleString("en-IN")}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </>
+              )}
+
+              {/* Final Amount */}
+              {rewardPointsToUse > 0 && (
+                <>
+                  <View className="h-px bg-primary/20 my-3" />
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-primary font-urbanist-bold text-lg">
+                      Final Amount
+                    </Text>
+                    <Text className="text-primary font-urbanist-bold text-2xl">
+                      ₹ {finalAmount.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           </View>
-          <PrimaryButton
-            title={processing ? "Processing..." : "Proceed to Payment"}
-            onPress={async () => {
-              if (processing) return;
-              try {
-                await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              } catch {}
-              setShowPaymentModal(true);
-            }}
-            disabled={processing}
-            leftIconName={processing ? undefined : "card-outline"}
-            withHaptics={false}
-          />
-        </Animated.View>
-      </ScrollView>
+
+          {/* Total Amount & Payment Button - At Bottom of ScrollView */}
+          <View className="px-6 mt-6">
+            <View className="bg-secondary/40 rounded-[20px] p-3 mb-3 border border-primary/10">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-primary/70 font-urbanist-medium text-sm">
+                  {rewardPointsToUse > 0 ? "Final Amount" : "Total Amount"}
+                </Text>
+                <Text className="text-primary font-urbanist-bold text-xl">
+                  ₹{" "}
+                  {(rewardPointsToUse > 0
+                    ? finalAmount
+                    : pricing.total
+                  ).toLocaleString("en-IN")}
+                </Text>
+              </View>
+            </View>
+            <PrimaryButton
+              title={processing ? "Processing..." : "Proceed to Payment"}
+              onPress={async () => {
+                if (processing) return;
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch {}
+                setShowPaymentModal(true);
+              }}
+              disabled={processing}
+              leftIconName={processing ? undefined : "card-outline"}
+              withHaptics={false}
+            />
+          </View>
+        </ScrollView>
+      </Animated.View>
 
       {/* Payment Modal */}
       <Modal
@@ -856,7 +849,9 @@ export default function BookingConfirmation() {
             className="flex-1"
             onPress={() => !processing && setShowPaymentModal(false)}
           />
-          <Animated.View entering={FadeInUp.duration(300).springify()}>
+          <Animated.View
+            entering={FadeInUp.duration(300).easing(Easing.out(Easing.cubic))}
+          >
             <View className="bg-background rounded-t-[32px] border-t-2 border-primary/10">
               <View
                 className="p-6"
@@ -959,7 +954,9 @@ export default function BookingConfirmation() {
       {/* Success Modal */}
       <Modal visible={showSuccess} transparent animationType="fade">
         <View className="flex-1 bg-black/50 items-center justify-center px-6">
-          <Animated.View entering={ZoomIn.duration(400).springify()}>
+          <Animated.View
+            entering={ZoomIn.duration(400).easing(Easing.out(Easing.cubic))}
+          >
             <View className="bg-background rounded-[32px] border-2 border-primary/15 overflow-hidden">
               <View className="p-8 items-center">
                 {/* Success Icon */}
