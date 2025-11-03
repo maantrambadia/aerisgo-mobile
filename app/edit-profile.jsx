@@ -7,7 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, Easing } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -134,8 +134,8 @@ export default function EditProfile() {
     <View className="flex-1 bg-background">
       {/* Header */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6 pb-4 bg-background flex-row items-center justify-between"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-6 pb-4 bg-background flex-row items-center justify-between border-b border-primary/10"
       >
         <TouchableOpacity
           className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
@@ -163,23 +163,21 @@ export default function EditProfile() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          <View className="px-6 mt-4">
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(100).springify()}
-            >
-              <FormInput
-                label="Full Name"
-                placeholder="Enter your name"
-                value={name}
-                onChangeText={(text) => setName(formatNameLive(text))}
-                leftIconName="person-outline"
-              />
-            </Animated.View>
+          <Animated.View
+            entering={FadeInDown.duration(400)
+              .delay(100)
+              .easing(Easing.out(Easing.cubic))}
+            className="px-6 mt-4"
+          >
+            <FormInput
+              label="Full Name"
+              placeholder="Enter your name"
+              value={name}
+              onChangeText={(text) => setName(formatNameLive(text))}
+              leftIconName="person-outline"
+            />
 
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(150).springify()}
-              className="mt-4"
-            >
+            <View className="mt-4">
               <FormInput
                 label="Phone Number"
                 placeholder="9000000000"
@@ -190,12 +188,9 @@ export default function EditProfile() {
                 prefix="+91"
                 maxLength={10}
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(200).springify()}
-              className="mt-4"
-            >
+            <View className="mt-4">
               <Text className="text-primary font-urbanist-medium text-base mb-2">
                 Gender
               </Text>
@@ -288,12 +283,9 @@ export default function EditProfile() {
                   </View>
                 </TouchableOpacity>
               </View>
-            </Animated.View>
+            </View>
 
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(250).springify()}
-              className="mt-8"
-            >
+            <View className="mt-8">
               <PrimaryButton
                 title={loading ? "Saving..." : "Save Changes"}
                 onPress={handleSave}
@@ -302,8 +294,8 @@ export default function EditProfile() {
                 hapticStyle="medium"
                 className="w-full"
               />
-            </Animated.View>
-          </View>
+            </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
