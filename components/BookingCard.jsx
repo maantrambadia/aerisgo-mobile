@@ -23,8 +23,11 @@ export default function BookingCard({ booking, onPress, delay = 0 }) {
   const now = new Date();
   const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
 
+  const checkInOpen = hoursUntilDeparture <= 24 && hoursUntilDeparture > 1;
   const canShowBoardingPass =
-    hoursUntilDeparture <= 24 && hoursUntilDeparture > 0;
+    booking.isCheckedIn &&
+    booking.status === "confirmed" &&
+    hoursUntilDeparture > 0;
 
   const formatTime = (date) => {
     return date.toLocaleTimeString("en-US", {
@@ -128,8 +131,20 @@ export default function BookingCard({ booking, onPress, delay = 0 }) {
             </Text>
           </View>
 
-          {/* Boarding pass indicator */}
-          {canShowBoardingPass && booking.status === "confirmed" && (
+          {/* Check-in / Boarding pass indicator */}
+          {checkInOpen &&
+            !booking.isCheckedIn &&
+            booking.status === "confirmed" && (
+              <View className="mt-3 pt-3 border-t border-text/20 px-5 pb-2">
+                <View className="flex-row items-center justify-center">
+                  <Ionicons name="airplane" size={16} color="#3b82f6" />
+                  <Text className="text-blue-400 font-urbanist-semibold text-xs ml-2">
+                    Check-in now available
+                  </Text>
+                </View>
+              </View>
+            )}
+          {canShowBoardingPass && (
             <View className="mt-3 pt-3 border-t border-text/20 px-5 pb-2">
               <View className="flex-row items-center justify-center">
                 <Ionicons name="checkmark-circle" size={16} color="#10b981" />

@@ -6,7 +6,6 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,7 +15,8 @@ import Loader from "../components/Loader";
 import BookingCard from "../components/BookingCard";
 import BookingDetailsModal from "../components/BookingDetailsModal";
 import BoardingPassModal from "../components/BoardingPassModal";
-import { getMyBookings, cancelBooking } from "../lib/bookings";
+import CancellationModal from "../components/CancellationModal";
+import { getMyBookings } from "../lib/bookings";
 import { toast } from "../lib/toast";
 
 export default function Tickets() {
@@ -27,6 +27,7 @@ export default function Tickets() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBoardingPass, setShowBoardingPass] = useState(false);
+  const [showCancellation, setShowCancellation] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -73,41 +74,12 @@ export default function Tickets() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     } catch {}
 
-    Alert.alert(
-      "Cancel Booking",
-      "Are you sure you want to cancel this booking?",
-      [
-        {
-          text: "No",
-          style: "cancel",
-        },
-        {
-          text: "Yes, Cancel",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await cancelBooking(selectedBooking._id);
-              try {
-                await Haptics.notificationAsync(
-                  Haptics.NotificationFeedbackType.Success
-                );
-              } catch {}
-              toast.success({
-                title: "Booking cancelled",
-                message: "Your booking has been cancelled successfully",
-              });
-              setShowDetailsModal(false);
-              fetchBookings();
-            } catch (err) {
-              toast.error({
-                title: "Cancellation failed",
-                message: err?.message || "Failed to cancel booking",
-              });
-            }
-          },
-        },
-      ]
-    );
+    setShowDetailsModal(false);
+    setTimeout(() => setShowCancellation(true), 300);
+  };
+
+  const handleCancellationSuccess = () => {
+    fetchBookings();
   };
 
   const handleBookingPress = async (booking) => {
@@ -252,6 +224,13 @@ export default function Tickets() {
         visible={showBoardingPass}
         onClose={() => setShowBoardingPass(false)}
         booking={selectedBooking}
+      />
+
+      <CancellationModal
+        visible={showCancellation}
+        onClose={() => setShowCancellation(false)}
+        booking={selectedBooking}
+        onSuccess={handleCancellationSuccess}
       />
     </View>
   );

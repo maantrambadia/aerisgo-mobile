@@ -123,7 +123,7 @@ export default function BottomNav({ active = "home", onPressItem }) {
         style={{
           paddingHorizontal: 6,
           paddingVertical: 6,
-          shadowColor: "#000",
+          shadowColor: "#541424",
           shadowOpacity: 0.15,
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 6 },

@@ -99,7 +99,10 @@ export default function RootLayout() {
         pathname === "/booking-confirmation" ||
         pathname === "/edit-profile" ||
         pathname === "/change-password" ||
-        pathname === "/user-documents";
+        pathname === "/user-documents" ||
+        pathname.startsWith("/check-in/") ||
+        pathname.startsWith("/meal-selection/") ||
+        pathname.startsWith("/baggage-info/");
       if (token && isAuthRoute) {
         router.replace("/home");
       } else if (!token && isProtectedRoute) {
@@ -118,12 +121,18 @@ export default function RootLayout() {
   return (
     <SafeScreen
       disableBottom={
+        pathname === "/" ||
         pathname === "/search-results" ||
         pathname === "/profile" ||
         pathname === "/rewards" ||
         pathname === "/booking-confirmation" ||
         pathname === "/tickets" ||
-        pathname === "/passenger-details"
+        pathname === "/passenger-details" ||
+        pathname === "/flight-details" ||
+        pathname === "/seat-selection" ||
+        pathname.startsWith("/check-in/") ||
+        pathname.startsWith("/meal-selection/") ||
+        pathname.startsWith("/baggage-info/")
       }
     >
       <StatusBar style="dark" />
@@ -190,6 +199,19 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="user-documents"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        {/* Check-in & Related Features */}
+        <Stack.Screen
+          name="check-in/[id]"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="meal-selection/[id]"
+          options={{ animation: "none", gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="baggage-info/[id]"
           options={{ animation: "none", gestureEnabled: false }}
         />
         {/* Auth */}

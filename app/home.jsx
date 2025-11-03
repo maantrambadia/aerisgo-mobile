@@ -40,16 +40,19 @@ import {
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
-  const [tripType, setTripType] = useState("oneway"); // roundtrip disabled
+  const [tripType, setTripType] = useState("oneway");
   const [from, setFrom] = useState("Ahmedabad (AMD)");
   const [to, setTo] = useState("Mumbai (BOM)");
   const [travelDate, setTravelDate] = useState(new Date());
+  const [returnDate, setReturnDate] = useState(null); // Return date for round-trip
   const [pax, setPax] = useState({ adults: 1, children: 0 });
 
   const [showFromModal, setShowFromModal] = useState(false);
   const [showToModal, setShowToModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
+  const [showReturnDateModal, setShowReturnDateModal] = useState(false); // Return date modal
   const [showNativePicker, setShowNativePicker] = useState(false);
+  const [showNativeReturnPicker, setShowNativeReturnPicker] = useState(false); // Return date native picker
   const [showPaxModal, setShowPaxModal] = useState(false);
   const [user, setUser] = useState(null);
 
@@ -184,14 +187,16 @@ export default function Home() {
     try {
       await Haptics.selectionAsync();
     } catch {}
-    if (type === "roundtrip") {
-      toast.warn({
-        title: "Round Trip disabled",
-        message: "Currently only One way is supported",
-      });
-      return;
+    setTripType(type);
+    // Clear return date if switching to one-way
+    if (type === "oneway") {
+      setReturnDate(null);
+    } else {
+      // Set default return date to day after departure
+      const defaultReturn = new Date(travelDate);
+      defaultReturn.setDate(defaultReturn.getDate() + 1);
+      setReturnDate(defaultReturn);
     }
-    setTripType("oneway");
   };
 
   // Prevent navigating back from Home (Android hardware back)
@@ -252,12 +257,12 @@ export default function Home() {
 
   return (
     <View className="flex-1 bg-background">
+      <StatusBar barStyle="dark-content" backgroundColor="#e3d0bf" />
       {/* Hero header */}
       <Animated.View
         entering={FadeInDown.duration(500).springify()}
         className="relative bg-background px-6 pt-6 pb-8 rounded-b-[32px]"
       >
-        <StatusBar barStyle="dark-content" backgroundColor="#e3d0bf" />
         {/* Top row: avatar + greeting+name + bell */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
@@ -300,7 +305,7 @@ export default function Home() {
           </Text>
         </View>
 
-        {/* Trip type radio row (One way / Round Trip - Round Trip disabled) */}
+        {/* Trip type radio row (One way / Round Trip) */}
         <View className="flex-row items-center gap-8 mt-2">
           <TouchableOpacity
             onPress={() => onChangeTrip("oneway")}
@@ -318,10 +323,14 @@ export default function Home() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onChangeTrip("roundtrip")}
-            activeOpacity={0.6}
-            className="flex-row items-center opacity-50"
+            activeOpacity={0.8}
+            className="flex-row items-center"
           >
-            <Ionicons name={"ellipse-outline"} size={26} color="#541424" />
+            <Ionicons
+              name={tripType === "roundtrip" ? "ellipse" : "ellipse-outline"}
+              size={26}
+              color="#541424"
+            />
             <Text className="text-primary ml-2 font-urbanist-medium text-lg">
               Round Trip
             </Text>
@@ -402,35 +411,75 @@ export default function Home() {
                 </View>
               </View>
             </ScaleOnPress>
-            {/* Date */}
-            <ScaleOnPress
-              className="py-5 border-b border-secondary/20"
-              onPress={async () => {
-                try {
-                  await Haptics.selectionAsync();
-                } catch {}
-                setShowDateModal(true);
-              }}
-            >
+            {/* Date - Side by side for round-trip */}
+            <View className="py-5 border-b border-secondary/20">
               <View className="flex-row items-center">
                 <View className="w-12 h-12 rounded-full bg-secondary/20 items-center justify-center mr-3">
                   <Ionicons name="calendar-outline" size={28} color="#e3d7cb" />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-secondary/80 font-urbanist text-sm">
-                    Date
-                  </Text>
-                  <Text className="text-secondary font-urbanist-medium mt-1">
-                    {new Date(travelDate).toLocaleDateString(undefined, {
-                      weekday: "short",
-                      day: "2-digit",
-                      month: "short",
-                      year: "2-digit",
-                    })}
-                  </Text>
+                <View className="flex-1 flex-row items-center gap-2">
+                  {/* Departure Date */}
+                  <ScaleOnPress
+                    className="flex-1"
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      setShowDateModal(true);
+                    }}
+                  >
+                    <View>
+                      <Text className="text-secondary/80 font-urbanist text-xs">
+                        {tripType === "roundtrip" ? "Departure" : "Date"}
+                      </Text>
+                      <Text className="text-secondary font-urbanist-medium mt-0.5 text-sm">
+                        {new Date(travelDate).toLocaleDateString(undefined, {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </Text>
+                    </View>
+                  </ScaleOnPress>
+
+                  {/* Return Date - Only show for round-trip */}
+                  {tripType === "roundtrip" && (
+                    <>
+                      <Ionicons
+                        name="arrow-forward"
+                        size={16}
+                        color="#e3d7cb"
+                      />
+                      <ScaleOnPress
+                        className="flex-1"
+                        onPress={async () => {
+                          try {
+                            await Haptics.selectionAsync();
+                          } catch {}
+                          setShowReturnDateModal(true);
+                        }}
+                      >
+                        <View>
+                          <Text className="text-secondary/80 font-urbanist text-xs">
+                            Return
+                          </Text>
+                          <Text className="text-secondary font-urbanist-medium mt-0.5 text-sm">
+                            {returnDate
+                              ? new Date(returnDate).toLocaleDateString(
+                                  undefined,
+                                  {
+                                    day: "2-digit",
+                                    month: "short",
+                                  }
+                                )
+                              : "Select"}
+                          </Text>
+                        </View>
+                      </ScaleOnPress>
+                    </>
+                  )}
                 </View>
               </View>
-            </ScaleOnPress>
+            </View>
             {/* Passenger */}
             <ScaleOnPress
               className="py-5"
@@ -504,13 +553,40 @@ export default function Home() {
                 });
                 return;
               }
+
+              // Validate return date for round-trip
+              if (tripType === "roundtrip") {
+                if (!returnDate) {
+                  toast.warn({
+                    title: "Return date required",
+                    message: "Please select a return date",
+                  });
+                  return;
+                }
+                const rDate = new Date(returnDate);
+                rDate.setHours(0, 0, 0, 0);
+                if (rDate <= tDate) {
+                  toast.warn({
+                    title: "Invalid return date",
+                    message: "Return date must be after departure date",
+                  });
+                  return;
+                }
+              }
+
               const iso = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, "0")}-${String(tDate.getDate()).padStart(2, "0")}`;
+              const returnIso =
+                returnDate && tripType === "roundtrip"
+                  ? `${new Date(returnDate).getFullYear()}-${String(new Date(returnDate).getMonth() + 1).padStart(2, "0")}-${String(new Date(returnDate).getDate()).padStart(2, "0")}`
+                  : undefined;
+
               router.push({
                 pathname: "/search-results",
                 params: {
                   from: src,
                   to: dst,
                   date: iso,
+                  ...(returnIso && { returnDate: returnIso }),
                   passengers: String(pax.adults + pax.children),
                   tripType,
                 },
@@ -919,6 +995,148 @@ export default function Home() {
           title="Done"
           className="mt-4"
           onPress={() => setShowPaxModal(false)}
+        />
+      </BottomSheetModal>
+
+      {/* Return Date modal */}
+      <BottomSheetModal
+        visible={showReturnDateModal}
+        onClose={() => {
+          setShowNativeReturnPicker(false);
+          setShowReturnDateModal(false);
+        }}
+        title="Select return date"
+        scrollable={false}
+        maxHeight="65%"
+      >
+        {/* Quick picks */}
+        <View className="flex-row items-center gap-2 mt-1 flex-wrap">
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={() => {
+              const tomorrow = new Date(travelDate);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              setReturnDate(tomorrow);
+            }}
+          >
+            <Text className="text-primary text-xs font-urbanist-medium">
+              Next Day
+            </Text>
+          </ScaleOnPress>
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={() => {
+              const threeDays = new Date(travelDate);
+              threeDays.setDate(threeDays.getDate() + 3);
+              setReturnDate(threeDays);
+            }}
+          >
+            <Text className="text-primary text-xs font-urbanist-medium">
+              +3 Days
+            </Text>
+          </ScaleOnPress>
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={() => {
+              const week = new Date(travelDate);
+              week.setDate(week.getDate() + 7);
+              setReturnDate(week);
+            }}
+          >
+            <Text className="text-primary text-xs font-urbanist-medium">
+              +1 Week
+            </Text>
+          </ScaleOnPress>
+          <ScaleOnPress
+            className="px-3 py-2 rounded-full bg-primary/10 border border-primary/15"
+            onPress={async () => {
+              try {
+                await Haptics.selectionAsync();
+              } catch {}
+              setShowNativeReturnPicker(true);
+            }}
+          >
+            <Text className="text-primary text-xs font-urbanist-medium">
+              Custom date
+            </Text>
+          </ScaleOnPress>
+        </View>
+        {showNativeReturnPicker ? (
+          <View className="mt-2">
+            <DateTimePicker
+              value={returnDate || new Date(travelDate.getTime() + 86400000)}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              minimumDate={new Date(travelDate.getTime() + 86400000)}
+              themeVariant={Platform.OS === "ios" ? "light" : undefined}
+              textColor={Platform.OS === "ios" ? COLORS.primary : undefined}
+              accentColor={COLORS.primary}
+              onChange={(event, selectedDate) => {
+                if (Platform.OS === "android") {
+                  setShowNativeReturnPicker(false);
+                }
+                if (selectedDate) {
+                  const d = new Date(selectedDate);
+                  d.setHours(0, 0, 0, 0);
+                  setReturnDate(d);
+                }
+              }}
+            />
+          </View>
+        ) : null}
+        <View className="flex-row items-center justify-between py-4">
+          <TouchableOpacity
+            disabled={!returnDate || returnDate <= travelDate}
+            className="px-4 py-3 rounded-full bg-primary/10"
+            style={{
+              opacity: !returnDate || returnDate <= travelDate ? 0.4 : 1,
+            }}
+            onPress={() => {
+              if (!returnDate || returnDate <= travelDate) return;
+              setReturnDate((d) => {
+                const nd = new Date(d);
+                nd.setDate(nd.getDate() - 1);
+                // Don't go before travel date
+                if (nd <= travelDate) return d;
+                return nd;
+              });
+            }}
+          >
+            <Ionicons name="chevron-back" size={20} color="#541424" />
+          </TouchableOpacity>
+          <Text
+            className="text-primary font-urbanist-bold text-lg"
+            numberOfLines={2}
+          >
+            {returnDate
+              ? new Date(returnDate).toLocaleDateString(undefined, {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "Select a date"}
+          </Text>
+          <TouchableOpacity
+            className="px-4 py-3 rounded-full bg-primary/10"
+            onPress={() =>
+              setReturnDate((d) => {
+                const nd = new Date(d || travelDate);
+                nd.setDate(nd.getDate() + 1);
+                return nd;
+              })
+            }
+          >
+            <Ionicons name="chevron-forward" size={20} color="#541424" />
+          </TouchableOpacity>
+        </View>
+        <PrimaryButton
+          title="Done"
+          className="mt-2"
+          onPress={() => {
+            setShowNativeReturnPicker(false);
+            setShowReturnDateModal(false);
+          }}
         />
       </BottomSheetModal>
     </View>

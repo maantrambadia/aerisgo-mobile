@@ -121,6 +121,39 @@ export default function BookingConfirmation() {
     }
   }, [params.seats]);
 
+  // Round-trip support
+  const outboundFlight = useMemo(() => {
+    try {
+      return JSON.parse(params.outboundFlight || "{}");
+    } catch {
+      return {};
+    }
+  }, [params.outboundFlight]);
+
+  const returnFlight = useMemo(() => {
+    try {
+      return JSON.parse(params.returnFlight || "{}");
+    } catch {
+      return {};
+    }
+  }, [params.returnFlight]);
+
+  const outboundSeats = useMemo(() => {
+    try {
+      return JSON.parse(params.outboundSeats || "[]");
+    } catch {
+      return [];
+    }
+  }, [params.outboundSeats]);
+
+  const returnSeats = useMemo(() => {
+    try {
+      return JSON.parse(params.returnSeats || "[]");
+    } catch {
+      return [];
+    }
+  }, [params.returnSeats]);
+
   const passengers = useMemo(() => {
     try {
       return JSON.parse(params.passengers || "[]");
@@ -129,7 +162,13 @@ export default function BookingConfirmation() {
     }
   }, [params.passengers]);
 
-  const { from, to, date } = params;
+  const { from, to, date, tripType = "oneway", returnDate } = params;
+  const isRoundTrip = tripType === "roundtrip";
+
+  // Use correct flight and seats based on trip type
+  const currentFlight = isRoundTrip ? outboundFlight : flight;
+  const currentSeats = isRoundTrip ? outboundSeats : seats;
+  const allSeats = isRoundTrip ? [...outboundSeats, ...returnSeats] : seats;
 
   useEffect(() => {
     fetchInitialData();
@@ -153,15 +192,20 @@ export default function BookingConfirmation() {
   }
 
   const pricing = useMemo(() => {
-    const baseFare = Number(flight.baseFare || 0);
+    // For round-trip, calculate total for both flights
+    const outboundBaseFare = Number(
+      (isRoundTrip ? outboundFlight : flight).baseFare || 0
+    );
+    const returnBaseFare = isRoundTrip ? Number(returnFlight.baseFare || 0) : 0;
 
-    if (!pricingConfig || seats.length === 0) {
+    if (!pricingConfig || allSeats.length === 0) {
       // Fallback calculation
-      const seatCharges = seats.reduce(
+      const seatCharges = allSeats.reduce(
         (sum, seat) => sum + (seat.isExtraLegroom ? 500 : 0),
         0
       );
-      const subtotal = baseFare * seats.length + seatCharges;
+      const subtotal =
+        (outboundBaseFare + returnBaseFare) * allSeats.length + seatCharges;
       const taxes = Math.round(subtotal * 0.12);
       const total = subtotal + taxes;
       return {
@@ -181,10 +225,12 @@ export default function BookingConfirmation() {
     let totalAirportFee = 0;
     let extraLegroomTotal = 0;
 
-    const breakdown = seats.map((seat) => {
+    // Calculate outbound seats (or all seats for one-way)
+    const seatsToCalculate = isRoundTrip ? outboundSeats : seats;
+    const outboundBreakdown = seatsToCalculate.map((seat) => {
       const classMultiplier =
         pricingConfig.travelClass[seat.travelClass]?.multiplier || 1;
-      const classPrice = baseFare * classMultiplier;
+      const classPrice = outboundBaseFare * classMultiplier;
       const extraLegroom = seat.isExtraLegroom
         ? pricingConfig.extraLegroom.charge
         : 0;
@@ -207,9 +253,45 @@ export default function BookingConfirmation() {
         extraLegroom,
         subtotal: seatSubtotal,
         total: seatSubtotal + gst + fuelSurcharge + airportFee,
+        flightType: "outbound",
       };
     });
 
+    // Calculate return seats for round-trip
+    const returnBreakdown = isRoundTrip
+      ? returnSeats.map((seat) => {
+          const classMultiplier =
+            pricingConfig.travelClass[seat.travelClass]?.multiplier || 1;
+          const classPrice = returnBaseFare * classMultiplier;
+          const extraLegroom = seat.isExtraLegroom
+            ? pricingConfig.extraLegroom.charge
+            : 0;
+          const seatSubtotal = classPrice + extraLegroom;
+
+          const gst = seatSubtotal * pricingConfig.taxes.gst;
+          const fuelSurcharge =
+            seatSubtotal * pricingConfig.taxes.fuelSurcharge;
+          const airportFee = pricingConfig.taxes.airportFee;
+
+          subtotal += seatSubtotal;
+          totalGst += gst;
+          totalFuelSurcharge += fuelSurcharge;
+          totalAirportFee += airportFee;
+          extraLegroomTotal += extraLegroom;
+
+          return {
+            seatNumber: seat.seatNumber,
+            travelClass: seat.travelClass,
+            classPrice,
+            extraLegroom,
+            subtotal: seatSubtotal,
+            total: seatSubtotal + gst + fuelSurcharge + airportFee,
+            flightType: "return",
+          };
+        })
+      : [];
+
+    const breakdown = [...outboundBreakdown, ...returnBreakdown];
     const total = subtotal + totalGst + totalFuelSurcharge + totalAirportFee;
 
     return {
@@ -221,7 +303,16 @@ export default function BookingConfirmation() {
       total: Math.round(total * 100) / 100 || 0,
       breakdown,
     };
-  }, [flight.baseFare, seats, pricingConfig]);
+  }, [
+    isRoundTrip,
+    outboundFlight.baseFare,
+    returnFlight.baseFare,
+    outboundSeats,
+    returnSeats,
+    flight.baseFare,
+    seats,
+    pricingConfig,
+  ]);
 
   const finalAmount = useMemo(() => {
     const rewardDiscount = rewardPointsToUse; // 1 point = ₹1
@@ -251,25 +342,53 @@ export default function BookingConfirmation() {
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Create booking
-      const bookingData = {
-        flightId: flight._id,
-        seatNumbers: seats.map((s) => s.seatNumber),
-        totalAmount: finalAmount,
-        paymentMethod: "card",
-        rewardPointsUsed: rewardPointsToUse,
-        passengers: passengers || [],
-      };
+      // Create booking(s)
+      if (isRoundTrip) {
+        // For round-trip, create single booking with return flight details
+        // Backend will create two linked bookings
+        const bookingData = {
+          flightId: outboundFlight._id,
+          seatNumbers: outboundSeats.map((s) => s.seatNumber),
+          totalAmount: finalAmount,
+          paymentMethod: "card",
+          rewardPointsUsed: rewardPointsToUse,
+          passengers: passengers || [],
+          bookingType: "round-trip",
+          returnFlightId: returnFlight._id,
+          returnSeatNumbers: returnSeats.map((s) => s.seatNumber),
+        };
 
-      const res = await apiFetch("/bookings/create", {
-        method: "POST",
-        auth: true,
-        json: bookingData,
-      });
+        const res = await apiFetch("/bookings/create", {
+          method: "POST",
+          auth: true,
+          json: bookingData,
+        });
 
-      // Store points earned from response
-      if (res.data?.pointsEarned) {
-        setPointsEarned(res.data.pointsEarned);
+        // Store points earned from response
+        if (res.data?.pointsEarned) {
+          setPointsEarned(res.data.pointsEarned);
+        }
+      } else {
+        // One-way booking
+        const bookingData = {
+          flightId: flight._id,
+          seatNumbers: seats.map((s) => s.seatNumber),
+          totalAmount: finalAmount,
+          paymentMethod: "card",
+          rewardPointsUsed: rewardPointsToUse,
+          passengers: passengers || [],
+        };
+
+        const res = await apiFetch("/bookings/create", {
+          method: "POST",
+          auth: true,
+          json: bookingData,
+        });
+
+        // Store points earned from response
+        if (res.data?.pointsEarned) {
+          setPointsEarned(res.data.pointsEarned);
+        }
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -384,6 +503,11 @@ export default function BookingConfirmation() {
             <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
               Confirm
             </Text>
+            {isRoundTrip && (
+              <Text className="text-primary/60 font-urbanist-medium text-sm mt-1">
+                Round Trip
+              </Text>
+            )}
           </View>
           <RoutePill from={from} to={to} />
         </View>
@@ -403,7 +527,7 @@ export default function BookingConfirmation() {
                   {from}
                 </Text>
                 <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                  {fmtTime(flight.departureTime)}
+                  {fmtTime(currentFlight.departureTime)}
                 </Text>
               </View>
 
@@ -444,14 +568,17 @@ export default function BookingConfirmation() {
                   {to}
                 </Text>
                 <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                  {fmtTime(flight.arrivalTime)}
+                  {fmtTime(currentFlight.arrivalTime)}
                 </Text>
               </View>
             </View>
 
             {/* Duration */}
             <Text className="text-text/70 font-urbanist-medium text-[11px] text-center mt-2">
-              {fmtDuration(flight.departureTime, flight.arrivalTime)}
+              {fmtDuration(
+                currentFlight.departureTime,
+                currentFlight.arrivalTime
+              )}
             </Text>
 
             {/* Bottom brand/price bar */}
@@ -461,12 +588,14 @@ export default function BookingConfirmation() {
                   AerisGo
                 </Text>
                 <Text className="text-text/70 font-urbanist-medium text-xs mt-0.5">
-                  {flight.flightNumber || "AG-101"}
+                  {currentFlight.flightNumber || "AG-101"}
                 </Text>
               </View>
               <View className="items-end">
                 <Text className="text-text/70 font-urbanist-medium text-xs">
-                  {new Date(date).toLocaleDateString()}
+                  {isRoundTrip
+                    ? "Round Trip"
+                    : new Date(date).toLocaleDateString()}
                 </Text>
                 <Text className="text-text font-urbanist-semibold text-sm mt-0.5">
                   {passengers.length} Passenger
@@ -495,7 +624,7 @@ export default function BookingConfirmation() {
             Selected Seats
           </Text>
           <View className="flex-row flex-wrap gap-2">
-            {seats.map((seat, i) => {
+            {allSeats.map((seat, i) => {
               const classColor =
                 seat.travelClass === "first"
                   ? "#a855f7"
@@ -545,7 +674,8 @@ export default function BookingConfirmation() {
             {/* Subtotal */}
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-primary/70 font-urbanist-medium text-sm">
-                Subtotal ({seats.length} seat{seats.length > 1 ? "s" : ""})
+                Subtotal ({allSeats.length} seat{allSeats.length > 1 ? "s" : ""}
+                )
               </Text>
               <Text className="text-primary font-urbanist-semibold text-sm">
                 ₹ {pricing.subtotal.toLocaleString("en-IN")}

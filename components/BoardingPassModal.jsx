@@ -192,7 +192,7 @@ export default function BoardingPassModal({ visible, onClose, booking }) {
                     Gate
                   </Text>
                   <Text className="text-primary font-urbanist-semibold text-base mt-1">
-                    A{Math.floor(Math.random() * 20) + 1}
+                    {booking.boardingPass?.gate || flight.gate || "TBA"}
                   </Text>
                 </View>
               </View>
@@ -214,9 +214,9 @@ export default function BoardingPassModal({ visible, onClose, booking }) {
               </View>
             </View>
 
-            {/* Booking ID */}
+            {/* PNR */}
             <Text className="text-center text-primary/60 font-urbanist-medium text-xs mt-3">
-              Booking ID: {booking._id?.substring(0, 12).toUpperCase()}
+              PNR: {booking.pnr}
             </Text>
           </View>
         </Animated.View>

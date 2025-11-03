@@ -27,6 +27,7 @@ import { toast } from "../lib/toast";
 import { apiFetch } from "../lib/api";
 import { getDocuments } from "../lib/profile";
 import { getFlightSeats, lockSeat, unlockSeat } from "../lib/seats";
+import { getDynamicPrice } from "../lib/pricing";
 import { useSeatSocket } from "../hooks/useSeatSocket";
 
 const ScaleOnPress = ({ children, className = "", onPress, ...rest }) => {
@@ -161,6 +162,12 @@ export default function SeatSelection() {
   const [lockedSeats, setLockedSeats] = useState(new Map()); // Map<seatNumber, {lockedBy, expiresAt}>
   const userUnlockingRef = useRef(new Set()); // Track seats being unlocked by user
 
+  // Round-trip support
+  const [currentStep, setCurrentStep] = useState("outbound"); // "outbound" or "return"
+  const [outboundSelectedSeats, setOutboundSelectedSeats] = useState([]);
+  const [returnSeats, setReturnSeats] = useState([]);
+  const [returnLockedSeats, setReturnLockedSeats] = useState(new Map());
+
   const flight = useMemo(() => {
     try {
       return JSON.parse(params.flight || "{}");
@@ -169,12 +176,42 @@ export default function SeatSelection() {
     }
   }, [params.flight]);
 
-  const { from, to, date, passengers } = params;
+  // Parse outbound and return flights for round-trip
+  const outboundFlight = useMemo(() => {
+    try {
+      return JSON.parse(params.outboundFlight || "{}");
+    } catch {
+      return {};
+    }
+  }, [params.outboundFlight]);
+
+  const returnFlight = useMemo(() => {
+    try {
+      return JSON.parse(params.returnFlight || "{}");
+    } catch {
+      return {};
+    }
+  }, [params.returnFlight]);
+
+  const {
+    from,
+    to,
+    date,
+    passengers,
+    tripType = "oneway",
+    returnDate,
+  } = params;
+  const isRoundTrip = tripType === "roundtrip";
+  const currentFlight = isRoundTrip
+    ? currentStep === "outbound"
+      ? outboundFlight
+      : returnFlight
+    : flight;
   const maxSeats = parseInt(passengers || 1);
 
   useEffect(() => {
     fetchData();
-  }, [flight]);
+  }, [currentFlight, currentStep]);
 
   async function fetchData() {
     try {
@@ -201,7 +238,7 @@ export default function SeatSelection() {
 
       const existingBooking = bookingsRes.data?.items?.find(
         (booking) =>
-          booking.flightId?._id === flight._id &&
+          booking.flightId?._id === currentFlight._id &&
           (booking.status === "confirmed" || booking.status === "pending")
       );
 
@@ -219,7 +256,7 @@ export default function SeatSelection() {
       }
 
       // Fetch seats
-      const seatsRes = await getFlightSeats(flight._id);
+      const seatsRes = await getFlightSeats(currentFlight._id);
 
       // Fetch pricing config
       const pricingRes = await apiFetch("/pricing/config", {
@@ -227,20 +264,35 @@ export default function SeatSelection() {
         auth: true,
       });
 
-      setSeats(seatsRes.seats || []);
-      setPricingConfig(pricingRes.data.config);
+      if (isRoundTrip && currentStep === "return") {
+        setReturnSeats(seatsRes.seats || []);
+        // Initialize return locked seats
+        const initialLocks = new Map();
+        (seatsRes.seats || []).forEach((seat) => {
+          if (seat.lockedBy && seat.lockExpiresAt) {
+            initialLocks.set(seat.seatNumber, {
+              lockedBy: seat.lockedBy,
+              expiresAt: new Date(seat.lockExpiresAt),
+            });
+          }
+        });
+        setReturnLockedSeats(initialLocks);
+      } else {
+        setSeats(seatsRes.seats || []);
+        // Initialize locked seats from server
+        const initialLocks = new Map();
+        (seatsRes.seats || []).forEach((seat) => {
+          if (seat.lockedBy && seat.lockExpiresAt) {
+            initialLocks.set(seat.seatNumber, {
+              lockedBy: seat.lockedBy,
+              expiresAt: new Date(seat.lockExpiresAt),
+            });
+          }
+        });
+        setLockedSeats(initialLocks);
+      }
 
-      // Initialize locked seats from server
-      const initialLocks = new Map();
-      (seatsRes.seats || []).forEach((seat) => {
-        if (seat.lockedBy && seat.lockExpiresAt) {
-          initialLocks.set(seat.seatNumber, {
-            lockedBy: seat.lockedBy,
-            expiresAt: new Date(seat.lockExpiresAt),
-          });
-        }
-      });
-      setLockedSeats(initialLocks);
+      setPricingConfig(pricingRes.data.config);
     } catch (err) {
       toast.error({
         title: "Error",
@@ -256,7 +308,7 @@ export default function SeatSelection() {
   const socketHandlers = useMemo(
     () => ({
       onSeatLocked: (data) => {
-        if (data.flightId !== flight._id) return;
+        if (data.flightId !== currentFlight._id) return;
         setLockedSeats((prev) => {
           const newLocks = new Map(prev);
           newLocks.set(data.seatNumber, {
@@ -267,7 +319,7 @@ export default function SeatSelection() {
         });
       },
       onSeatUnlocked: (data) => {
-        if (data.flightId !== flight._id) return;
+        if (data.flightId !== currentFlight._id) return;
         setLockedSeats((prev) => {
           const newLocks = new Map(prev);
           newLocks.delete(data.seatNumber);
@@ -293,7 +345,7 @@ export default function SeatSelection() {
         }
       },
       onSeatBooked: (data) => {
-        if (data.flightId !== flight._id) return;
+        if (data.flightId !== currentFlight._id) return;
         // Update seat availability
         setSeats((prevSeats) =>
           prevSeats.map((s) =>
@@ -308,7 +360,7 @@ export default function SeatSelection() {
         });
       },
       onSeatExpired: (data) => {
-        if (data.flightId !== flight._id) return;
+        if (data.flightId !== currentFlight._id) return;
         setLockedSeats((prev) => {
           const newLocks = new Map(prev);
           newLocks.delete(data.seatNumber);
@@ -329,7 +381,7 @@ export default function SeatSelection() {
         }
       },
       onSeatCancelled: (data) => {
-        if (data.flightId !== flight._id) return;
+        if (data.flightId !== currentFlight._id) return;
         // Booking was cancelled, seat becomes available again
         setSeats((prevSeats) =>
           prevSeats.map((s) =>
@@ -347,11 +399,11 @@ export default function SeatSelection() {
         console.error("Socket error:", error);
       },
     }),
-    [flight._id, selectedSeats]
+    [currentFlight._id, selectedSeats]
   );
 
   // Initialize Socket.IO connection
-  useSeatSocket(flight._id, socketHandlers);
+  useSeatSocket(currentFlight._id, socketHandlers);
 
   async function handleSeatSelect(seat) {
     const isAlreadySelected = selectedSeats.some(
@@ -365,7 +417,7 @@ export default function SeatSelection() {
         userUnlockingRef.current.add(seat.seatNumber);
 
         await unlockSeat({
-          flightId: flight._id,
+          flightId: currentFlight._id,
           seatNumber: seat.seatNumber,
           sessionId,
         });
@@ -398,7 +450,7 @@ export default function SeatSelection() {
         const previousSeat =
           selectedSeats.length > 0 ? selectedSeats[0].seatNumber : undefined;
         await lockSeat({
-          flightId: flight._id,
+          flightId: currentFlight._id,
           seatNumber: seat.seatNumber,
           sessionId,
           previousSeat,
@@ -434,23 +486,60 @@ export default function SeatSelection() {
       return;
     }
 
+    // For round-trip, handle two-step flow
+    if (isRoundTrip && currentStep === "outbound") {
+      // Save outbound seats and move to return flight
+      setOutboundSelectedSeats(selectedSeats);
+      setSelectedSeats([]);
+      setCurrentStep("return");
+      toast.success({
+        title: "Outbound Seats Selected",
+        message: "Now select seats for your return flight",
+      });
+      return;
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.push({
-      pathname: "/passenger-details",
-      params: {
-        flight: JSON.stringify(flight),
-        seats: JSON.stringify(selectedSeats),
-        from,
-        to,
-        date,
-      },
-    });
+
+    if (isRoundTrip) {
+      router.push({
+        pathname: "/passenger-details",
+        params: {
+          outboundFlight: JSON.stringify(outboundFlight),
+          returnFlight: JSON.stringify(returnFlight),
+          outboundSeats: JSON.stringify(outboundSelectedSeats),
+          returnSeats: JSON.stringify(selectedSeats),
+          from,
+          to,
+          date,
+          returnDate,
+          tripType: "roundtrip",
+        },
+      });
+    } else {
+      router.push({
+        pathname: "/passenger-details",
+        params: {
+          flight: JSON.stringify(flight),
+          seats: JSON.stringify(selectedSeats),
+          from,
+          to,
+          date,
+          tripType: "oneway",
+        },
+      });
+    }
   }
 
-  // Group seats by row
+  // Group seats by row - use correct seats based on current step
+  const currentSeats =
+    isRoundTrip && currentStep === "return" ? returnSeats : seats;
+  const currentLockedSeats =
+    isRoundTrip && currentStep === "return" ? returnLockedSeats : lockedSeats;
+
   const seatsByRow = useMemo(() => {
     const rows = {};
-    seats.forEach((seat) => {
+    currentSeats.forEach((seat) => {
       const match = seat.seatNumber.match(/^(\d+)([A-F])$/);
       if (match) {
         const rowNum = parseInt(match[1]);
@@ -459,7 +548,7 @@ export default function SeatSelection() {
       }
     });
     return rows;
-  }, [seats]);
+  }, [currentSeats]);
 
   const rowNumbers = Object.keys(seatsByRow)
     .map(Number)
@@ -473,7 +562,7 @@ export default function SeatSelection() {
 
   // Helper to check if seat is locked
   const getSeatLockStatus = (seatNumber) => {
-    const lock = lockedSeats.get(seatNumber);
+    const lock = currentLockedSeats.get(seatNumber);
     if (!lock) return { isLocked: false, isLockedByMe: false };
 
     const now = new Date();
@@ -486,15 +575,68 @@ export default function SeatSelection() {
     return { isLocked: true, isLockedByMe };
   };
 
-  // Calculate total price
+  // State for dynamic pricing
+  const [dynamicPricing, setDynamicPricing] = useState(null);
+  const [loadingPrice, setLoadingPrice] = useState(false);
+
+  // Fetch dynamic pricing when seat selection changes
+  useEffect(() => {
+    if (selectedSeats.length === 0 || !currentFlight._id) {
+      setDynamicPricing(null);
+      return;
+    }
+
+    const fetchDynamicPricing = async () => {
+      try {
+        setLoadingPrice(true);
+        // Calculate total for all selected seats
+        let totalDynamic = 0;
+
+        for (const seat of selectedSeats) {
+          const seatType =
+            seat.seatNumber.includes("A") || seat.seatNumber.includes("F")
+              ? "window"
+              : seat.seatNumber.includes("C") || seat.seatNumber.includes("D")
+                ? "aisle"
+                : "middle";
+
+          const priceData = await getDynamicPrice(
+            currentFlight._id,
+            seat.travelClass,
+            seat.isExtraLegroom,
+            seatType
+          );
+
+          totalDynamic += priceData.pricing.total;
+        }
+
+        setDynamicPricing({ total: totalDynamic });
+      } catch (error) {
+        console.error("Failed to fetch dynamic pricing:", error);
+        // Fallback to static pricing if dynamic fails
+        setDynamicPricing(null);
+      } finally {
+        setLoadingPrice(false);
+      }
+    };
+
+    fetchDynamicPricing();
+  }, [selectedSeats, currentFlight._id]);
+
+  // Calculate total price (use dynamic if available, fallback to static)
   const totalPrice = useMemo(() => {
+    if (dynamicPricing) {
+      return Math.round(dynamicPricing.total * 100) / 100;
+    }
+
+    // Fallback to static pricing
     if (!pricingConfig) return 0;
 
     let total = 0;
     selectedSeats.forEach((seat) => {
       const classMultiplier =
         pricingConfig.travelClass[seat.travelClass]?.multiplier || 1;
-      const classPrice = flight.baseFare * classMultiplier;
+      const classPrice = currentFlight.baseFare * classMultiplier;
       const extraLegroom = seat.isExtraLegroom
         ? pricingConfig.extraLegroom.charge
         : 0;
@@ -509,7 +651,7 @@ export default function SeatSelection() {
     });
 
     return Math.round(total * 100) / 100;
-  }, [selectedSeats, pricingConfig, flight.baseFare]);
+  }, [selectedSeats, pricingConfig, currentFlight.baseFare, dynamicPricing]);
 
   if (loading) {
     return <Loader message="Loading seat map" subtitle="Please wait..." />;
@@ -564,8 +706,18 @@ export default function SeatSelection() {
             <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
               Your Seat
             </Text>
+            {isRoundTrip && (
+              <Text className="text-primary/60 font-urbanist-medium text-sm mt-1">
+                {currentStep === "outbound"
+                  ? "Outbound Flight"
+                  : "Return Flight"}
+              </Text>
+            )}
           </View>
-          <RoutePill from={from} to={to} />
+          <RoutePill
+            from={currentStep === "return" ? to : from}
+            to={currentStep === "return" ? from : to}
+          />
         </View>
       </Animated.View>
 
@@ -583,315 +735,361 @@ export default function SeatSelection() {
               {selectedSeats.length} / {maxSeats}
             </Text>
           </View>
+          {isRoundTrip && (
+            <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-primary/10">
+              <Text className="text-primary/70 font-urbanist-medium text-sm">
+                Step
+              </Text>
+              <Text className="text-primary font-urbanist-semibold text-sm">
+                {currentStep === "outbound" ? "1 of 2" : "2 of 2"}
+              </Text>
+            </View>
+          )}
         </View>
       </Animated.View>
 
-      {/* Horizontal Seat Map */}
-      <Animated.View
-        entering={FadeInRight.duration(600).delay(150).springify()}
-        className="flex-1 mt-4"
+      {/* Scrollable Content */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        className="flex-1"
       >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 16 }}
-          snapToInterval={100}
-          decelerationRate="fast"
+        {/* Horizontal Seat Map */}
+        <Animated.View
+          entering={FadeInRight.duration(600).delay(150).springify()}
+          className="mt-4"
         >
-          {/* Cockpit */}
-          <View className="w-20 mr-3">
-            {/* Top spacing to match row labels (h-4 + h-6 + mb-1 + mb-1 = 44px) */}
-            <View className="h-11" />
-            <View className="w-16 h-[340px] bg-primary/10 rounded-l-[32px] border-2 border-primary/20 items-center justify-center">
-              <Ionicons name="airplane" size={28} color="#541424" />
-              <Text className="text-primary font-urbanist-bold text-[10px] mt-2">
-                COCKPIT
-              </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 16 }}
+            snapToInterval={100}
+            decelerationRate="fast"
+          >
+            {/* Cockpit */}
+            <View className="w-20 mr-3">
+              {/* Top spacing to match row labels (h-4 + h-6 + mb-1 + mb-1 = 44px) */}
+              <View className="h-11" />
+              <View className="w-16 h-[340px] bg-primary/10 rounded-l-[32px] border-2 border-primary/20 items-center justify-center">
+                <Ionicons name="airplane" size={28} color="#541424" />
+                <Text className="text-primary font-urbanist-bold text-[10px] mt-2">
+                  COCKPIT
+                </Text>
+              </View>
             </View>
-          </View>
 
-          {/* Seat Rows */}
-          {rowNumbers.map((rowNum, index) => {
-            const row = seatsByRow[rowNum];
-            const rowClass = getRowClass(rowNum);
-            const isExitRow = rowNum === 10 || rowNum === 11;
-            const isFirstOfClass = rowNum === 1 || rowNum === 3 || rowNum === 8;
+            {/* Seat Rows */}
+            {rowNumbers.map((rowNum, index) => {
+              const row = seatsByRow[rowNum];
+              const rowClass = getRowClass(rowNum);
+              const isExitRow = rowNum === 10 || rowNum === 11;
+              const isFirstOfClass =
+                rowNum === 1 || rowNum === 3 || rowNum === 8;
 
-            return (
-              <Animated.View
-                key={rowNum}
-                entering={FadeInRight.duration(400).delay(200 + index * 20)}
-                className="w-24 mr-1.5"
-              >
-                {/* Class Label - Fixed height container for consistent alignment */}
-                <View className="items-center mb-1 h-4">
-                  {isFirstOfClass && (
-                    <View
-                      className={`px-2 py-0.5 rounded-full ${
-                        rowClass === "first"
-                          ? "bg-purple-500/20"
-                          : rowClass === "business"
-                            ? "bg-blue-500/20"
-                            : "bg-gray-500/20"
-                      }`}
-                    >
-                      <Text
-                        className={`font-urbanist-bold text-[9px] ${
+              return (
+                <Animated.View
+                  key={rowNum}
+                  entering={FadeInRight.duration(400).delay(200 + index * 20)}
+                  className="w-24 mr-1.5"
+                >
+                  {/* Class Label - Fixed height container for consistent alignment */}
+                  <View className="items-center mb-1 h-4">
+                    {isFirstOfClass && (
+                      <View
+                        className={`px-2 py-0.5 rounded-full ${
                           rowClass === "first"
-                            ? "text-purple-700"
+                            ? "bg-purple-500/20"
                             : rowClass === "business"
-                              ? "text-blue-700"
-                              : "text-gray-700"
+                              ? "bg-blue-500/20"
+                              : "bg-gray-500/20"
                         }`}
                       >
-                        {rowClass === "first"
-                          ? "FIRST"
-                          : rowClass === "business"
-                            ? "BUSINESS"
-                            : "ECONOMY"}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Row Number Top - Fixed height container */}
-                <View className="items-center mb-1 h-6">
-                  <Text className="text-primary/50 font-urbanist-bold text-[11px]">
-                    {rowNum}
-                  </Text>
-                  {isExitRow && (
-                    <View className="bg-yellow-500/20 px-1.5 py-0.5 rounded-full mt-0.5">
-                      <Text className="text-yellow-700 font-urbanist-bold text-[8px]">
-                        EXIT
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Seats Column - Vertical arrangement from bottom to top (A to F) */}
-                <View className="h-[300px] justify-center items-center">
-                  <View className="gap-2">
-                    {/* Window Seat F (Right side) - TOP */}
-                    {["F"].map((letter) => {
-                      const seat = row[letter];
-                      if (!seat) return <View key={letter} className="h-11" />;
-                      const lockStatus = getSeatLockStatus(seat.seatNumber);
-                      return (
-                        <SeatButton
-                          key={letter}
-                          seat={seat}
-                          selected={selectedSeats.some(
-                            (s) => s.seatNumber === seat.seatNumber
-                          )}
-                          onPress={handleSeatSelect}
-                          rowClass={rowClass}
-                          isLocked={lockStatus.isLocked}
-                          isLockedByMe={lockStatus.isLockedByMe}
-                        />
-                      );
-                    })}
-
-                    {/* Middle Seat E (Right side) */}
-                    {["E"].map((letter) => {
-                      const seat = row[letter];
-                      if (!seat) return <View key={letter} className="h-11" />;
-                      const lockStatus = getSeatLockStatus(seat.seatNumber);
-                      return (
-                        <SeatButton
-                          key={letter}
-                          seat={seat}
-                          selected={selectedSeats.some(
-                            (s) => s.seatNumber === seat.seatNumber
-                          )}
-                          onPress={handleSeatSelect}
-                          rowClass={rowClass}
-                          isLocked={lockStatus.isLocked}
-                          isLockedByMe={lockStatus.isLockedByMe}
-                        />
-                      );
-                    })}
-
-                    {/* Aisle Seat D (Right side) */}
-                    {["D"].map((letter) => {
-                      const seat = row[letter];
-                      if (!seat) return <View key={letter} className="h-11" />;
-                      const lockStatus = getSeatLockStatus(seat.seatNumber);
-                      return (
-                        <SeatButton
-                          key={letter}
-                          seat={seat}
-                          selected={selectedSeats.some(
-                            (s) => s.seatNumber === seat.seatNumber
-                          )}
-                          onPress={handleSeatSelect}
-                          rowClass={rowClass}
-                          isLocked={lockStatus.isLocked}
-                          isLockedByMe={lockStatus.isLockedByMe}
-                        />
-                      );
-                    })}
-
-                    {/* Aisle Separator */}
-                    <View className="h-4 items-center justify-center">
-                      <View className="w-full h-[2px] bg-blue-300/40" />
-                    </View>
-
-                    {/* Aisle Seat C (Left side) */}
-                    {["C"].map((letter) => {
-                      const seat = row[letter];
-                      if (!seat) return <View key={letter} className="h-11" />;
-                      const lockStatus = getSeatLockStatus(seat.seatNumber);
-                      return (
-                        <SeatButton
-                          key={letter}
-                          seat={seat}
-                          selected={selectedSeats.some(
-                            (s) => s.seatNumber === seat.seatNumber
-                          )}
-                          onPress={handleSeatSelect}
-                          rowClass={rowClass}
-                          isLocked={lockStatus.isLocked}
-                          isLockedByMe={lockStatus.isLockedByMe}
-                        />
-                      );
-                    })}
-
-                    {/* Middle Seat B (Left side) */}
-                    {["B"].map((letter) => {
-                      const seat = row[letter];
-                      if (!seat) return <View key={letter} className="h-11" />;
-                      const lockStatus = getSeatLockStatus(seat.seatNumber);
-                      return (
-                        <SeatButton
-                          key={letter}
-                          seat={seat}
-                          selected={selectedSeats.some(
-                            (s) => s.seatNumber === seat.seatNumber
-                          )}
-                          onPress={handleSeatSelect}
-                          rowClass={rowClass}
-                          isLocked={lockStatus.isLocked}
-                          isLockedByMe={lockStatus.isLockedByMe}
-                        />
-                      );
-                    })}
-
-                    {/* Window Seat A (Left side) - BOTTOM */}
-                    {["A"].map((letter) => {
-                      const seat = row[letter];
-                      if (!seat) return <View key={letter} className="h-11" />;
-                      const lockStatus = getSeatLockStatus(seat.seatNumber);
-                      return (
-                        <SeatButton
-                          key={letter}
-                          seat={seat}
-                          selected={selectedSeats.some(
-                            (s) => s.seatNumber === seat.seatNumber
-                          )}
-                          onPress={handleSeatSelect}
-                          rowClass={rowClass}
-                          isLocked={lockStatus.isLocked}
-                          isLockedByMe={lockStatus.isLockedByMe}
-                        />
-                      );
-                    })}
+                        <Text
+                          className={`font-urbanist-bold text-[9px] ${
+                            rowClass === "first"
+                              ? "text-purple-700"
+                              : rowClass === "business"
+                                ? "text-blue-700"
+                                : "text-gray-700"
+                          }`}
+                        >
+                          {rowClass === "first"
+                            ? "FIRST"
+                            : rowClass === "business"
+                              ? "BUSINESS"
+                              : "ECONOMY"}
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                </View>
 
-                {/* Row Number Bottom - Fixed height container */}
-                <View className="items-center mt-1 h-4">
-                  <Text className="text-primary/50 font-urbanist-bold text-[11px]">
-                    {rowNum}
-                  </Text>
-                </View>
-              </Animated.View>
-            );
-          })}
+                  {/* Row Number Top - Fixed height container */}
+                  <View className="items-center mb-1 h-6">
+                    <Text className="text-primary/50 font-urbanist-bold text-[11px]">
+                      {rowNum}
+                    </Text>
+                    {isExitRow && (
+                      <View className="bg-yellow-500/20 px-1.5 py-0.5 rounded-full mt-0.5">
+                        <Text className="text-yellow-700 font-urbanist-bold text-[8px]">
+                          EXIT
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
-          {/* Tail */}
-          <View className="w-20 ml-3">
-            {/* Top spacing to match row labels (h-4 + h-6 + mb-1 + mb-1 = 44px) */}
-            <View className="h-11" />
-            <View className="w-16 h-[340px] bg-primary/10 rounded-r-[32px] border-2 border-primary/20 items-center justify-center">
-              <Ionicons name="exit-outline" size={24} color="#541424" />
-              <Text className="text-primary font-urbanist-bold text-[10px] mt-2">
-                TAIL
+                  {/* Seats Column - Vertical arrangement from bottom to top (A to F) */}
+                  <View className="h-[300px] justify-center items-center">
+                    <View className="gap-2">
+                      {/* Window Seat F (Right side) - TOP */}
+                      {["F"].map((letter) => {
+                        const seat = row[letter];
+                        if (!seat)
+                          return <View key={letter} className="h-11" />;
+                        const lockStatus = getSeatLockStatus(seat.seatNumber);
+                        return (
+                          <SeatButton
+                            key={letter}
+                            seat={seat}
+                            selected={selectedSeats.some(
+                              (s) => s.seatNumber === seat.seatNumber
+                            )}
+                            onPress={handleSeatSelect}
+                            rowClass={rowClass}
+                            isLocked={lockStatus.isLocked}
+                            isLockedByMe={lockStatus.isLockedByMe}
+                          />
+                        );
+                      })}
+
+                      {/* Middle Seat E (Right side) */}
+                      {["E"].map((letter) => {
+                        const seat = row[letter];
+                        if (!seat)
+                          return <View key={letter} className="h-11" />;
+                        const lockStatus = getSeatLockStatus(seat.seatNumber);
+                        return (
+                          <SeatButton
+                            key={letter}
+                            seat={seat}
+                            selected={selectedSeats.some(
+                              (s) => s.seatNumber === seat.seatNumber
+                            )}
+                            onPress={handleSeatSelect}
+                            rowClass={rowClass}
+                            isLocked={lockStatus.isLocked}
+                            isLockedByMe={lockStatus.isLockedByMe}
+                          />
+                        );
+                      })}
+
+                      {/* Aisle Seat D (Right side) */}
+                      {["D"].map((letter) => {
+                        const seat = row[letter];
+                        if (!seat)
+                          return <View key={letter} className="h-11" />;
+                        const lockStatus = getSeatLockStatus(seat.seatNumber);
+                        return (
+                          <SeatButton
+                            key={letter}
+                            seat={seat}
+                            selected={selectedSeats.some(
+                              (s) => s.seatNumber === seat.seatNumber
+                            )}
+                            onPress={handleSeatSelect}
+                            rowClass={rowClass}
+                            isLocked={lockStatus.isLocked}
+                            isLockedByMe={lockStatus.isLockedByMe}
+                          />
+                        );
+                      })}
+
+                      {/* Aisle Separator */}
+                      <View className="h-4 items-center justify-center">
+                        <View className="w-full h-[2px] bg-blue-300/40" />
+                      </View>
+
+                      {/* Aisle Seat C (Left side) */}
+                      {["C"].map((letter) => {
+                        const seat = row[letter];
+                        if (!seat)
+                          return <View key={letter} className="h-11" />;
+                        const lockStatus = getSeatLockStatus(seat.seatNumber);
+                        return (
+                          <SeatButton
+                            key={letter}
+                            seat={seat}
+                            selected={selectedSeats.some(
+                              (s) => s.seatNumber === seat.seatNumber
+                            )}
+                            onPress={handleSeatSelect}
+                            rowClass={rowClass}
+                            isLocked={lockStatus.isLocked}
+                            isLockedByMe={lockStatus.isLockedByMe}
+                          />
+                        );
+                      })}
+
+                      {/* Middle Seat B (Left side) */}
+                      {["B"].map((letter) => {
+                        const seat = row[letter];
+                        if (!seat)
+                          return <View key={letter} className="h-11" />;
+                        const lockStatus = getSeatLockStatus(seat.seatNumber);
+                        return (
+                          <SeatButton
+                            key={letter}
+                            seat={seat}
+                            selected={selectedSeats.some(
+                              (s) => s.seatNumber === seat.seatNumber
+                            )}
+                            onPress={handleSeatSelect}
+                            rowClass={rowClass}
+                            isLocked={lockStatus.isLocked}
+                            isLockedByMe={lockStatus.isLockedByMe}
+                          />
+                        );
+                      })}
+
+                      {/* Window Seat A (Left side) - BOTTOM */}
+                      {["A"].map((letter) => {
+                        const seat = row[letter];
+                        if (!seat)
+                          return <View key={letter} className="h-11" />;
+                        const lockStatus = getSeatLockStatus(seat.seatNumber);
+                        return (
+                          <SeatButton
+                            key={letter}
+                            seat={seat}
+                            selected={selectedSeats.some(
+                              (s) => s.seatNumber === seat.seatNumber
+                            )}
+                            onPress={handleSeatSelect}
+                            rowClass={rowClass}
+                            isLocked={lockStatus.isLocked}
+                            isLockedByMe={lockStatus.isLockedByMe}
+                          />
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Row Number Bottom - Fixed height container */}
+                  <View className="items-center mt-1 h-4">
+                    <Text className="text-primary/50 font-urbanist-bold text-[11px]">
+                      {rowNum}
+                    </Text>
+                  </View>
+                </Animated.View>
+              );
+            })}
+
+            {/* Tail */}
+            <View className="w-20 ml-3">
+              {/* Top spacing to match row labels (h-4 + h-6 + mb-1 + mb-1 = 44px) */}
+              <View className="h-11" />
+              <View className="w-16 h-[340px] bg-primary/10 rounded-r-[32px] border-2 border-primary/20 items-center justify-center">
+                <Ionicons name="exit-outline" size={24} color="#541424" />
+                <Text className="text-primary font-urbanist-bold text-[10px] mt-2">
+                  TAIL
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+        </Animated.View>
+
+        {/* Legend */}
+        <Animated.View
+          entering={FadeInUp.duration(550).delay(200).springify()}
+          className="px-6 mt-4"
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 12 }}
+          >
+            <View className="flex-row items-center gap-2">
+              <View className="w-4 h-4 rounded bg-purple-500" />
+              <Text className="text-primary/70 font-urbanist-medium text-xs">
+                First
               </Text>
             </View>
-          </View>
-        </ScrollView>
-      </Animated.View>
+            <View className="flex-row items-center gap-2">
+              <View className="w-4 h-4 rounded bg-blue-500" />
+              <Text className="text-primary/70 font-urbanist-medium text-xs">
+                Business
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <View className="w-4 h-4 rounded bg-gray-500" />
+              <Text className="text-primary/70 font-urbanist-medium text-xs">
+                Economy
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <View className="w-4 h-4 rounded bg-yellow-500" />
+              <Text className="text-primary/70 font-urbanist-medium text-xs">
+                Extra Legroom
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <View className="w-4 h-4 rounded bg-red-600" />
+              <Text className="text-primary/70 font-urbanist-medium text-xs">
+                Occupied
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <View className="w-4 h-4 rounded bg-primary" />
+              <Text className="text-primary/70 font-urbanist-medium text-xs">
+                Selected
+              </Text>
+            </View>
+          </ScrollView>
+        </Animated.View>
 
-      {/* Legend */}
-      <Animated.View
-        entering={FadeInUp.duration(550).delay(200).springify()}
-        className="px-6 mt-2"
-      >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 12 }}
-        >
-          <View className="flex-row items-center gap-2">
-            <View className="w-4 h-4 rounded bg-purple-500" />
-            <Text className="text-primary/70 font-urbanist-medium text-xs">
-              First
-            </Text>
+        {/* Total Fare and Button - Inside scrollable content */}
+        <View className="px-6 mt-6">
+          <View className="bg-secondary/40 rounded-[20px] p-3 mb-3 border border-primary/10">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-primary/70 font-urbanist-medium text-sm">
+                  Total Fare
+                </Text>
+                {dynamicPricing && (
+                  <View className="bg-primary/10 rounded-full px-2 py-0.5">
+                    <Text className="text-primary font-urbanist-semibold text-[10px]">
+                      LIVE
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View className="flex-row items-center gap-1">
+                {loadingPrice && (
+                  <Text className="text-primary/40 font-urbanist-medium text-xs">
+                    Updating...
+                  </Text>
+                )}
+                <Text className="text-primary font-urbanist-bold text-xl">
+                  ₹ {totalPrice.toLocaleString("en-IN")}
+                </Text>
+              </View>
+            </View>
+            {dynamicPricing && (
+              <Text className="text-primary/50 font-urbanist text-[10px] mt-1">
+                Price includes demand & time-based adjustments
+              </Text>
+            )}
           </View>
-          <View className="flex-row items-center gap-2">
-            <View className="w-4 h-4 rounded bg-blue-500" />
-            <Text className="text-primary/70 font-urbanist-medium text-xs">
-              Business
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <View className="w-4 h-4 rounded bg-gray-500" />
-            <Text className="text-primary/70 font-urbanist-medium text-xs">
-              Economy
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <View className="w-4 h-4 rounded bg-yellow-500" />
-            <Text className="text-primary/70 font-urbanist-medium text-xs">
-              Extra Legroom
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <View className="w-4 h-4 rounded bg-red-600" />
-            <Text className="text-primary/70 font-urbanist-medium text-xs">
-              Occupied
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <View className="w-4 h-4 rounded bg-primary" />
-            <Text className="text-primary/70 font-urbanist-medium text-xs">
-              Selected
-            </Text>
-          </View>
-        </ScrollView>
-      </Animated.View>
-
-      {/* Bottom Button */}
-      <View
-        className="absolute bottom-0 left-0 right-0 px-6"
-        style={{ paddingBottom: insets.bottom + 5 }}
-      >
-        <View className="bg-secondary/40 rounded-[20px] p-3 mb-2 border border-primary/10">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-primary/70 font-urbanist-medium text-sm">
-              Total Fare
-            </Text>
-            <Text className="text-primary font-urbanist-bold text-xl">
-              ₹ {totalPrice.toLocaleString("en-IN")}
-            </Text>
-          </View>
+          <PrimaryButton
+            title={
+              isRoundTrip && currentStep === "outbound"
+                ? "Continue to Return Flight"
+                : "Continue to Passenger Details"
+            }
+            onPress={handleContinue}
+            disabled={selectedSeats.length === 0}
+          />
         </View>
-        <PrimaryButton
-          title="Continue to Payment"
-          onPress={handleContinue}
-          disabled={selectedSeats.length === 0}
-        />
-      </View>
+      </ScrollView>
 
       {/* Document Required Modal */}
       <Modal

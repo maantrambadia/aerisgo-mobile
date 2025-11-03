@@ -64,12 +64,57 @@ export default function PassengerDetails() {
 
   const flight = params.flight ? JSON.parse(params.flight) : null;
   const seats = params.seats ? JSON.parse(params.seats) : [];
-  const { from, to, date } = params;
+
+  // Round-trip support
+  const outboundFlight = params.outboundFlight
+    ? JSON.parse(params.outboundFlight)
+    : null;
+  const returnFlight = params.returnFlight
+    ? JSON.parse(params.returnFlight)
+    : null;
+  const outboundSeats = params.outboundSeats
+    ? JSON.parse(params.outboundSeats)
+    : [];
+  const returnSeats = params.returnSeats ? JSON.parse(params.returnSeats) : [];
+  const { from, to, date, tripType = "oneway", returnDate } = params;
+  const isRoundTrip = tripType === "roundtrip";
+
+  // Use correct flight and seats based on trip type
+  // For round-trip, only ask for passenger details once (for outbound seats)
+  // The same passengers will be used for both flights
+  const currentFlight = isRoundTrip ? outboundFlight : flight;
+  const currentSeats = isRoundTrip ? outboundSeats : seats;
 
   useEffect(() => {
-    if (!flight || !seats || seats.length === 0) {
-      router.replace("/");
-      return;
+    if (isRoundTrip) {
+      if (!outboundFlight || !returnFlight) {
+        console.log("Missing flights:", { outboundFlight, returnFlight });
+        toast.error({
+          title: "Error",
+          message: "Flight information missing",
+        });
+        setTimeout(() => router.replace("/"), 1000);
+        return;
+      }
+      if (outboundSeats.length === 0 && returnSeats.length === 0) {
+        console.log("Missing seats:", { outboundSeats, returnSeats });
+        toast.error({
+          title: "Error",
+          message: "Seat information missing",
+        });
+        setTimeout(() => router.replace("/"), 1000);
+        return;
+      }
+    } else {
+      if (!flight || !seats || seats.length === 0) {
+        console.log("Missing flight or seats:", { flight, seats });
+        toast.error({
+          title: "Error",
+          message: "Flight or seat information missing",
+        });
+        setTimeout(() => router.replace("/"), 1000);
+        return;
+      }
     }
     fetchUserProfile();
   }, []);
@@ -79,7 +124,7 @@ export default function PassengerDetails() {
       const profile = await getProfile();
 
       // Initialize passengers array
-      const initialPassengers = seats.map((seat, index) => ({
+      const initialPassengers = currentSeats.map((seat, index) => ({
         seatNumber: seat.seatNumber,
         isPrimary: index === 0,
         fullName: index === 0 ? profile.user.name : "",
@@ -99,14 +144,14 @@ export default function PassengerDetails() {
       }
 
       setPassengers(initialPassengers);
-    } catch (err) {
-      console.error("Failed to fetch user profile:", err);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
       toast.error({
         title: "Error",
-        message: "Failed to load user profile",
+        message: "Failed to load profile",
       });
     } finally {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 400);
     }
   }
 
@@ -164,17 +209,36 @@ export default function PassengerDetails() {
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.push({
-      pathname: "/booking-confirmation",
-      params: {
-        flight: JSON.stringify(flight),
-        seats: JSON.stringify(seats),
-        passengers: JSON.stringify(passengers),
-        from,
-        to,
-        date,
-      },
-    });
+    if (isRoundTrip) {
+      router.push({
+        pathname: "/booking-confirmation",
+        params: {
+          outboundFlight: JSON.stringify(outboundFlight),
+          returnFlight: JSON.stringify(returnFlight),
+          outboundSeats: JSON.stringify(outboundSeats),
+          returnSeats: JSON.stringify(returnSeats),
+          passengers: JSON.stringify(passengers),
+          from,
+          to,
+          date,
+          returnDate,
+          tripType: "roundtrip",
+        },
+      });
+    } else {
+      router.push({
+        pathname: "/booking-confirmation",
+        params: {
+          flight: JSON.stringify(flight),
+          seats: JSON.stringify(seats),
+          passengers: JSON.stringify(passengers),
+          from,
+          to,
+          date,
+          tripType: "oneway",
+        },
+      });
+    }
   }
 
   const formatTime = (dateString) => {
@@ -190,8 +254,20 @@ export default function PassengerDetails() {
     }
   };
 
-  if (loading || !flight || !seats || seats.length === 0) {
-    return <Loader />;
+  if (loading) {
+    return (
+      <Loader
+        message="Loading passenger details"
+        subtitle="Preparing your form"
+      />
+    );
+  }
+
+  // Safety check for required data
+  if (!currentFlight || currentSeats.length === 0) {
+    return (
+      <Loader message="Loading flight details" subtitle="Please wait..." />
+    );
   }
 
   return (
@@ -231,30 +307,41 @@ export default function PassengerDetails() {
       >
         <View className="flex-row items-center justify-between mb-3">
           <RoutePill from={from} to={to} />
-          <Text className="text-xs font-urbanist-medium text-text/70">
-            {new Date(date).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </Text>
+          <View className="items-end">
+            <Text className="text-xs font-urbanist-medium text-text/70">
+              {new Date(date).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </Text>
+            {isRoundTrip && (
+              <Text className="text-xs font-urbanist-semibold text-text/90 mt-0.5">
+                Round Trip
+              </Text>
+            )}
+          </View>
         </View>
         <View className="flex-row items-center justify-between">
           <View>
             <Text className="text-2xl font-urbanist-bold text-text">
-              {flight.flightNumber}
+              {currentFlight.flightNumber}
             </Text>
             <Text className="text-sm font-urbanist-medium text-text/70 mt-1">
-              {formatTime(flight.departureTime)} -{" "}
-              {formatTime(flight.arrivalTime)}
+              {formatTime(currentFlight.departureTime)} -{" "}
+              {formatTime(currentFlight.arrivalTime)}
             </Text>
           </View>
           <View className="items-end">
             <Text className="text-sm font-urbanist-medium text-text/70">
-              {seats.length} Seat{seats.length > 1 ? "s" : ""}
+              {isRoundTrip
+                ? "Passengers"
+                : `${currentSeats.length} Seat${currentSeats.length > 1 ? "s" : ""}`}
             </Text>
             <Text className="text-lg font-urbanist-bold text-text">
-              {seats.map((s) => s.seatNumber).join(", ")}
+              {isRoundTrip
+                ? `${currentSeats.length} Pax`
+                : currentSeats.map((s) => s.seatNumber).join(", ")}
             </Text>
           </View>
         </View>

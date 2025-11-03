@@ -237,13 +237,25 @@ const TicketResultCard = ({
 
 export default function SearchResults() {
   const params = useLocalSearchParams();
-  const { from = "", to = "", date = "", passengers = "1" } = params;
+  const {
+    from = "",
+    to = "",
+    date = "",
+    passengers = "1",
+    tripType = "oneway",
+    returnDate,
+  } = params;
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [flights, setFlights] = useState([]);
+  const [returnFlights, setReturnFlights] = useState([]);
+  const [selectedOutbound, setSelectedOutbound] = useState(null);
+  const [selectedReturn, setSelectedReturn] = useState(null);
   const [sortBy, setSortBy] = useState("price-low");
   const [showFilterModal, setShowFilterModal] = useState(false);
+
+  const isRoundTrip = tripType === "roundtrip";
 
   useEffect(() => {
     let mounted = true;
@@ -256,9 +268,13 @@ export default function SearchResults() {
           destination: to,
           date,
           passengers: Number(passengers || 1),
+          returnDate: isRoundTrip ? returnDate : undefined,
         });
         if (!mounted) return;
         setFlights(Array.isArray(res?.flights) ? res.flights : []);
+        setReturnFlights(
+          Array.isArray(res?.returnFlights) ? res.returnFlights : []
+        );
       } catch (e) {
         if (!mounted) return;
         setError(e?.message || "Failed to fetch flights");
@@ -269,7 +285,7 @@ export default function SearchResults() {
     return () => {
       mounted = false;
     };
-  }, [from, to, date, passengers]);
+  }, [from, to, date, passengers, isRoundTrip, returnDate]);
 
   // Sort flights based on selected option
   const sortedFlights = useMemo(() => {
@@ -390,6 +406,11 @@ export default function SearchResults() {
             <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
               Available
             </Text>
+            {isRoundTrip && (
+              <Text className="text-primary/70 font-urbanist-medium text-sm mt-1">
+                Round Trip
+              </Text>
+            )}
           </View>
           <RoutePill from={from} to={to} />
         </View>
@@ -443,40 +464,157 @@ export default function SearchResults() {
               <Text className="text-primary/80">No flights found</Text>
             </View>
           ) : (
-            sortedFlights.map((f, i) => (
-              <Animated.View
-                key={i}
-                entering={FadeInUp.duration(600)
-                  .delay(200 + i * 60)
-                  .springify()}
-              >
-                <TicketResultCard
-                  fromCity={from}
-                  toCity={to}
-                  departTime={fmtTime(f.departureTime)}
-                  arriveTime={fmtTime(f.arrivalTime)}
-                  duration={fmtDuration(f.departureTime, f.arrivalTime)}
-                  priceInr={f.baseFare}
-                  onPress={async () => {
-                    try {
-                      await Haptics.impactAsync(
-                        Haptics.ImpactFeedbackStyle.Medium
-                      );
-                    } catch {}
-                    router.push({
-                      pathname: "/flight-details",
-                      params: {
-                        flight: JSON.stringify(f),
-                        from,
-                        to,
-                        date,
-                        passengers,
-                      },
-                    });
-                  }}
-                />
-              </Animated.View>
-            ))
+            <>
+              {/* Outbound Flights Section */}
+              {isRoundTrip && (
+                <View className="mb-2">
+                  <Text className="text-primary font-urbanist-bold text-xl">
+                    Select Outbound Flight
+                  </Text>
+                  <Text className="text-primary/60 font-urbanist text-sm">
+                    {from} → {to}
+                  </Text>
+                </View>
+              )}
+
+              {sortedFlights.map((f, i) => (
+                <Animated.View
+                  key={i}
+                  entering={FadeInUp.duration(600)
+                    .delay(200 + i * 60)
+                    .springify()}
+                  className="relative"
+                >
+                  <TicketResultCard
+                    fromCity={from}
+                    toCity={to}
+                    departTime={fmtTime(f.departureTime)}
+                    arriveTime={fmtTime(f.arrivalTime)}
+                    duration={fmtDuration(f.departureTime, f.arrivalTime)}
+                    priceInr={f.baseFare}
+                    onPress={async () => {
+                      try {
+                        await Haptics.impactAsync(
+                          Haptics.ImpactFeedbackStyle.Medium
+                        );
+                      } catch {}
+
+                      if (isRoundTrip) {
+                        setSelectedOutbound(f);
+                        toast.success({
+                          title: "Outbound selected",
+                          message: "Now select return flight",
+                        });
+                      } else {
+                        router.push({
+                          pathname: "/flight-details",
+                          params: {
+                            flight: JSON.stringify(f),
+                            from,
+                            to,
+                            date,
+                            passengers,
+                            tripType: "oneway",
+                          },
+                        });
+                      }
+                    }}
+                  />
+                  {isRoundTrip && selectedOutbound?._id === f._id && (
+                    <View className="absolute top-2 right-2 bg-green-500 px-3 py-1 rounded-full">
+                      <Text className="text-white font-urbanist-bold text-xs">
+                        ✓ Selected
+                      </Text>
+                    </View>
+                  )}
+                </Animated.View>
+              ))}
+
+              {/* Return Flights Section */}
+              {isRoundTrip && returnFlights.length > 0 && (
+                <>
+                  <View className="mt-8 mb-2">
+                    <Text className="text-primary font-urbanist-bold text-xl">
+                      Select Return Flight
+                    </Text>
+                    <Text className="text-primary/60 font-urbanist text-sm">
+                      {to} → {from}
+                    </Text>
+                  </View>
+
+                  {returnFlights.map((f, i) => (
+                    <Animated.View
+                      key={`return-${i}`}
+                      entering={FadeInUp.duration(600)
+                        .delay(200 + i * 60)
+                        .springify()}
+                      className="relative"
+                    >
+                      <TicketResultCard
+                        fromCity={to}
+                        toCity={from}
+                        departTime={fmtTime(f.departureTime)}
+                        arriveTime={fmtTime(f.arrivalTime)}
+                        duration={fmtDuration(f.departureTime, f.arrivalTime)}
+                        priceInr={f.baseFare}
+                        onPress={async () => {
+                          try {
+                            await Haptics.impactAsync(
+                              Haptics.ImpactFeedbackStyle.Medium
+                            );
+                          } catch {}
+
+                          if (!selectedOutbound) {
+                            toast.warn({
+                              title: "Select outbound first",
+                              message: "Please select an outbound flight",
+                            });
+                            return;
+                          }
+
+                          setSelectedReturn(f);
+
+                          // Navigate to flight details with both flights
+                          router.push({
+                            pathname: "/flight-details",
+                            params: {
+                              outboundFlight: JSON.stringify(selectedOutbound),
+                              returnFlight: JSON.stringify(f),
+                              from,
+                              to,
+                              date,
+                              returnDate,
+                              passengers,
+                              tripType: "roundtrip",
+                            },
+                          });
+                        }}
+                      />
+                      {selectedReturn?._id === f._id && (
+                        <View className="absolute top-2 right-2 bg-green-500 px-3 py-1 rounded-full">
+                          <Text className="text-white font-urbanist-bold text-xs">
+                            ✓ Selected
+                          </Text>
+                        </View>
+                      )}
+                    </Animated.View>
+                  ))}
+                </>
+              )}
+
+              {/* No Return Flights Message */}
+              {isRoundTrip && returnFlights.length === 0 && !loading && (
+                <View className="mt-8 p-6 bg-amber-50 rounded-3xl border border-amber-200">
+                  <Text className="text-amber-800 font-urbanist-bold text-lg mb-2">
+                    No Return Flights Available
+                  </Text>
+                  <Text className="text-amber-700 font-urbanist text-sm">
+                    Unfortunately, there are no return flights from {to} to{" "}
+                    {from} on the selected date.
+                  </Text>
+                </View>
+              )}
+            </>
           )}
         </ScrollView>
       </Animated.View>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import BottomSheetModal from "./BottomSheetModal";
@@ -45,11 +46,18 @@ export default function BookingDetailsModal({
   const now = new Date();
   const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
 
-  const canShowBoardingPass =
+  const checkInOpen =
     hoursUntilDeparture <= 24 &&
-    hoursUntilDeparture > 0 &&
+    hoursUntilDeparture > 1 &&
     booking.status === "confirmed";
-  const canCancel = hoursUntilDeparture > 24 && booking.status === "confirmed";
+  const canShowBoardingPass =
+    booking.isCheckedIn &&
+    booking.status === "confirmed" &&
+    hoursUntilDeparture > 0;
+  const canCancel =
+    hoursUntilDeparture > 24 &&
+    !booking.isCheckedIn &&
+    booking.status === "confirmed";
   const isPast = departureDate < now;
 
   const formatTime = (date) => {
@@ -344,19 +352,49 @@ export default function BookingDetailsModal({
           )}
         </View>
 
-        {/* Booking ID */}
+        {/* PNR & Booking ID */}
         <View className="bg-primary/5 rounded-2xl p-4 mb-4">
+          {/* PNR - Prominent Display */}
           <Text className="text-primary/60 font-urbanist text-xs mb-1">
-            Booking ID
+            PNR (Booking Reference)
           </Text>
-          <Text className="text-primary font-urbanist-semibold">
-            {booking._id?.substring(0, 24).toUpperCase()}
+          <Text className="text-primary font-urbanist-bold text-2xl mb-4 tracking-widest font-mono">
+            {booking.pnr || "N/A"}
           </Text>
+
+          {/* Booking ID */}
+          <View className="pt-3 border-t border-primary/10">
+            <Text className="text-primary/60 font-urbanist text-xs mb-1">
+              Booking ID
+            </Text>
+            <Text className="text-primary font-urbanist-semibold text-xs">
+              {booking._id?.substring(0, 24).toUpperCase()}
+            </Text>
+          </View>
         </View>
 
         {/* Actions */}
         <View className="space-y-3">
-          {/* Boarding Pass Button - Only show when available */}
+          {/* Check-in Button - Show when check-in is open but not checked in */}
+          {checkInOpen && !booking.isCheckedIn && (
+            <PrimaryButton
+              title="Web Check-in"
+              onPress={async () => {
+                try {
+                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                } catch {}
+                onClose();
+                router.push({
+                  pathname: "/check-in/[id]",
+                  params: { id: booking._id },
+                });
+              }}
+              className="w-full"
+              icon={<Ionicons name="airplane" size={20} color="#fff" />}
+            />
+          )}
+
+          {/* Boarding Pass Button - Only show when checked in */}
           {canShowBoardingPass && (
             <PrimaryButton
               title="View Boarding Pass"
