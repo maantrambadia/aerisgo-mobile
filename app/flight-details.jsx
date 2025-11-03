@@ -13,6 +13,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -209,8 +210,8 @@ export default function FlightDetails() {
     <View className="flex-1 bg-background">
       {/* Header */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-6 pb-4"
       >
         <View className="flex-row items-center justify-between">
           <TouchableOpacity
@@ -241,350 +242,352 @@ export default function FlightDetails() {
         </View>
       </Animated.View>
 
-      {/* Title + Route */}
+      {/* Grouped Content Animation */}
       <Animated.View
-        entering={FadeInDown.duration(550).delay(80).springify()}
-        className="px-6 mt-4"
-      >
-        <View className="flex-row items-start justify-between">
-          <View style={{ maxWidth: "60%" }}>
-            <Text className="text-primary font-urbanist-bold text-3xl leading-9">
-              Selected
-            </Text>
-            <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
-              {isRoundTrip ? "Flights" : "Flight"}
-            </Text>
-            {isRoundTrip && (
-              <Text className="text-primary/60 font-urbanist-medium text-sm mt-1">
-                Round Trip
-              </Text>
-            )}
-          </View>
-          <RoutePill from={from} to={to} />
-        </View>
-      </Animated.View>
-
-      {/* Scrollable Content */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        entering={FadeInUp.duration(400)
+          .delay(100)
+          .easing(Easing.out(Easing.cubic))}
         className="flex-1"
       >
-        <Animated.View
-          entering={FadeInUp.duration(600).delay(180).springify()}
-          className="px-6 mt-4"
+        {/* Title + Route */}
+        <View className="px-6 mt-4 pb-4 border-b border-primary/10">
+          <View className="flex-row items-start justify-between">
+            <View style={{ maxWidth: "60%" }}>
+              <Text className="text-primary font-urbanist-bold text-3xl leading-9">
+                Selected
+              </Text>
+              <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
+                {isRoundTrip ? "Flights" : "Flight"}
+              </Text>
+              {isRoundTrip && (
+                <Text className="text-primary/70 font-urbanist-medium text-sm mt-1">
+                  Round Trip
+                </Text>
+              )}
+            </View>
+            <RoutePill from={from} to={to} />
+          </View>
+        </View>
+
+        {/* Scrollable Content */}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          className="flex-1"
         >
-          {/* Outbound Flight Label */}
-          {isRoundTrip && (
-            <View className="mb-2 flex-row items-center gap-2">
-              <Text className="text-primary font-urbanist-bold text-base">
-                Outbound Flight
-              </Text>
-              <Text className="text-primary/60 font-urbanist text-xs">
-                {new Date(date).toLocaleDateString(undefined, {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </Text>
-            </View>
-          )}
-
-          {/* Flight Ticket Card */}
-          <View className="relative mt-4">
-            <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
-              {/* Top row times/cities + arc */}
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="text-text/90 font-urbanist-semibold text-[11px]">
-                    {from}
-                  </Text>
-                  <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                    {departTime}
-                  </Text>
-                </View>
-
-                {/* Arc with plane */}
-                <View style={{ width: 110, alignItems: "center" }}>
-                  <View
-                    style={{
-                      width: 100,
-                      height: 44,
-                      overflow: "hidden",
-                      alignItems: "center",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 100,
-                        height: 100,
-                        borderRadius: 50,
-                        borderWidth: 1,
-                        borderStyle: "dashed",
-                        borderColor: "rgba(227,215,203,0.45)",
-                      }}
-                    />
-                  </View>
-                  <View className="w-9 h-9 rounded-full items-center justify-center border border-text/40 -mt-6 bg-primary">
-                    <Ionicons
-                      name="airplane"
-                      size={16}
-                      color="#e3d7cb"
-                      style={{ transform: [{ rotate: "90deg" }] }}
-                    />
-                  </View>
-                </View>
-
-                <View className="items-end">
-                  <Text className="text-text/90 font-urbanist-semibold text-[11px]">
-                    {to}
-                  </Text>
-                  <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                    {arriveTime}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Duration */}
-              <Text className="text-text/70 font-urbanist-medium text-[11px] text-center mt-2">
-                {duration}
-              </Text>
-
-              {/* Bottom brand/price bar */}
-              <View className="flex-row items-center justify-between mt-4">
-                <Text className="text-text font-urbanist-bold text-2xl">
-                  AerisGo
-                </Text>
-                <Text className="text-text font-urbanist-bold text-xl">
-                  ₹ {price}
-                </Text>
-              </View>
-            </View>
-
-            {/* Ticket notches */}
-            <Notch side="left" />
-            <Notch side="right" />
-          </View>
-
-          {/* Flight Info Section */}
-          <View className="mt-6 bg-secondary/40 rounded-[24px] p-5 border border-primary/10">
-            <Text className="text-primary font-urbanist-bold text-base mb-4">
-              Flight Information
-            </Text>
-
-            <View className="space-y-3">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-primary/70 font-urbanist-medium text-sm">
-                  Flight Number
-                </Text>
-                <Text className="text-primary font-urbanist-semibold text-sm">
-                  {displayFlight.flightNumber || "AG-101"}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <Text className="text-primary/70 font-urbanist-medium text-sm">
-                  Aircraft
-                </Text>
-                <Text className="text-primary font-urbanist-semibold text-sm">
-                  {displayFlight.aircraft || "A320 Neo"}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <Text className="text-primary/70 font-urbanist-medium text-sm">
-                  Date
-                </Text>
-                <Text className="text-primary font-urbanist-semibold text-sm">
-                  {new Date(date).toLocaleDateString()}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <Text className="text-primary/70 font-urbanist-medium text-sm">
-                  Passengers
-                </Text>
-                <Text className="text-primary font-urbanist-semibold text-sm">
-                  {passengers || 1}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Return Flight Card - Only for round-trip */}
-          {isRoundTrip && returnFlight && (
-            <>
-              {/* Return Flight Label */}
-              <View className="mt-8 mb-2 flex-row items-center gap-2">
+          <View className="px-6 mt-4">
+            {/* Outbound Flight Label */}
+            {isRoundTrip && (
+              <View className="mb-2 flex-row items-center gap-2">
                 <Text className="text-primary font-urbanist-bold text-base">
-                  Return Flight
+                  Outbound Flight
                 </Text>
                 <Text className="text-primary/60 font-urbanist text-xs">
-                  {new Date(returnDate).toLocaleDateString(undefined, {
+                  {new Date(date).toLocaleDateString(undefined, {
                     day: "numeric",
                     month: "short",
                   })}
                 </Text>
               </View>
+            )}
 
-              {/* Return Flight Ticket Card */}
-              <View className="relative mt-4">
-                <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
-                  {/* Top row times/cities + arc */}
-                  <View className="flex-row items-center justify-between">
-                    <View>
-                      <Text className="text-text/90 font-urbanist-semibold text-[11px]">
-                        {to}
-                      </Text>
-                      <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                        {returnDepartTime}
-                      </Text>
-                    </View>
+            {/* Flight Ticket Card */}
+            <View className="relative mt-4">
+              <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
+                {/* Top row times/cities + arc */}
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-text/90 font-urbanist-semibold text-[11px]">
+                      {from}
+                    </Text>
+                    <Text className="text-text font-urbanist-bold text-2xl mt-1">
+                      {departTime}
+                    </Text>
+                  </View>
 
-                    {/* Arc with plane */}
-                    <View style={{ width: 110, alignItems: "center" }}>
+                  {/* Arc with plane */}
+                  <View style={{ width: 110, alignItems: "center" }}>
+                    <View
+                      style={{
+                        width: 100,
+                        height: 44,
+                        overflow: "hidden",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                      }}
+                    >
                       <View
                         style={{
                           width: 100,
-                          height: 44,
-                          overflow: "hidden",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
+                          height: 100,
+                          borderRadius: 50,
+                          borderWidth: 1,
+                          borderStyle: "dashed",
+                          borderColor: "rgba(227,215,203,0.45)",
                         }}
-                      >
+                      />
+                    </View>
+                    <View className="w-9 h-9 rounded-full items-center justify-center border border-text/40 -mt-6 bg-primary">
+                      <Ionicons
+                        name="airplane"
+                        size={16}
+                        color="#e3d7cb"
+                        style={{ transform: [{ rotate: "90deg" }] }}
+                      />
+                    </View>
+                  </View>
+
+                  <View className="items-end">
+                    <Text className="text-text/90 font-urbanist-semibold text-[11px]">
+                      {to}
+                    </Text>
+                    <Text className="text-text font-urbanist-bold text-2xl mt-1">
+                      {arriveTime}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Duration */}
+                <Text className="text-text/70 font-urbanist-medium text-[11px] text-center mt-2">
+                  {duration}
+                </Text>
+
+                {/* Bottom brand/price bar */}
+                <View className="flex-row items-center justify-between mt-4">
+                  <Text className="text-text font-urbanist-bold text-2xl">
+                    AerisGo
+                  </Text>
+                  <Text className="text-text font-urbanist-bold text-xl">
+                    ₹ {price}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Ticket notches */}
+              <Notch side="left" />
+              <Notch side="right" />
+            </View>
+
+            {/* Flight Info Section */}
+            <View className="mt-6 bg-secondary/40 rounded-[24px] p-5 border border-primary/10">
+              <Text className="text-primary font-urbanist-bold text-base mb-4">
+                Flight Information
+              </Text>
+
+              <View className="space-y-3">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-primary/70 font-urbanist-medium text-sm">
+                    Flight Number
+                  </Text>
+                  <Text className="text-primary font-urbanist-semibold text-sm">
+                    {displayFlight.flightNumber || "AG-101"}
+                  </Text>
+                </View>
+
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-primary/70 font-urbanist-medium text-sm">
+                    Aircraft
+                  </Text>
+                  <Text className="text-primary font-urbanist-semibold text-sm">
+                    {displayFlight.aircraft || "A320 Neo"}
+                  </Text>
+                </View>
+
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-primary/70 font-urbanist-medium text-sm">
+                    Date
+                  </Text>
+                  <Text className="text-primary font-urbanist-semibold text-sm">
+                    {new Date(date).toLocaleDateString()}
+                  </Text>
+                </View>
+
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-primary/70 font-urbanist-medium text-sm">
+                    Passengers
+                  </Text>
+                  <Text className="text-primary font-urbanist-semibold text-sm">
+                    {passengers || 1}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Return Flight Card - Only for round-trip */}
+            {isRoundTrip && returnFlight && (
+              <>
+                {/* Return Flight Label */}
+                <View className="mt-8 mb-2 flex-row items-center gap-2">
+                  <Text className="text-primary font-urbanist-bold text-base">
+                    Return Flight
+                  </Text>
+                  <Text className="text-primary/60 font-urbanist text-xs">
+                    {new Date(returnDate).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </Text>
+                </View>
+
+                {/* Return Flight Ticket Card */}
+                <View className="relative mt-4">
+                  <View className="bg-primary rounded-[28px] p-5 overflow-hidden">
+                    {/* Top row times/cities + arc */}
+                    <View className="flex-row items-center justify-between">
+                      <View>
+                        <Text className="text-text/90 font-urbanist-semibold text-[11px]">
+                          {to}
+                        </Text>
+                        <Text className="text-text font-urbanist-bold text-2xl mt-1">
+                          {returnDepartTime}
+                        </Text>
+                      </View>
+
+                      {/* Arc with plane */}
+                      <View style={{ width: 110, alignItems: "center" }}>
                         <View
                           style={{
                             width: 100,
-                            height: 100,
-                            borderRadius: 50,
-                            borderWidth: 1,
-                            borderStyle: "dashed",
-                            borderColor: "rgba(227,215,203,0.45)",
+                            height: 44,
+                            overflow: "hidden",
+                            alignItems: "center",
+                            justifyContent: "flex-end",
                           }}
-                        />
+                        >
+                          <View
+                            style={{
+                              width: 100,
+                              height: 100,
+                              borderRadius: 50,
+                              borderWidth: 1,
+                              borderStyle: "dashed",
+                              borderColor: "rgba(227,215,203,0.45)",
+                            }}
+                          />
+                        </View>
+                        <View className="w-9 h-9 rounded-full items-center justify-center border border-text/40 -mt-6 bg-primary">
+                          <Ionicons
+                            name="airplane"
+                            size={16}
+                            color="#e3d7cb"
+                            style={{ transform: [{ rotate: "90deg" }] }}
+                          />
+                        </View>
                       </View>
-                      <View className="w-9 h-9 rounded-full items-center justify-center border border-text/40 -mt-6 bg-primary">
-                        <Ionicons
-                          name="airplane"
-                          size={16}
-                          color="#e3d7cb"
-                          style={{ transform: [{ rotate: "90deg" }] }}
-                        />
+
+                      <View className="items-end">
+                        <Text className="text-text/90 font-urbanist-semibold text-[11px]">
+                          {from}
+                        </Text>
+                        <Text className="text-text font-urbanist-bold text-2xl mt-1">
+                          {returnArriveTime}
+                        </Text>
                       </View>
                     </View>
 
-                    <View className="items-end">
-                      <Text className="text-text/90 font-urbanist-semibold text-[11px]">
-                        {from}
+                    {/* Duration */}
+                    <Text className="text-text/70 font-urbanist-medium text-[11px] text-center mt-2">
+                      {returnDuration}
+                    </Text>
+
+                    {/* Bottom brand/price bar */}
+                    <View className="flex-row items-center justify-between mt-4">
+                      <Text className="text-text font-urbanist-bold text-2xl">
+                        AerisGo
                       </Text>
-                      <Text className="text-text font-urbanist-bold text-2xl mt-1">
-                        {returnArriveTime}
+                      <Text className="text-text font-urbanist-bold text-xl">
+                        ₹ {returnPrice}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Duration */}
-                  <Text className="text-text/70 font-urbanist-medium text-[11px] text-center mt-2">
-                    {returnDuration}
+                  {/* Ticket notches */}
+                  <Notch side="left" />
+                  <Notch side="right" />
+                </View>
+
+                {/* Return Flight Info Section */}
+                <View className="mt-6 bg-secondary/40 rounded-[24px] p-5 border border-primary/10">
+                  <Text className="text-primary font-urbanist-bold text-base mb-4">
+                    Return Flight Information
                   </Text>
 
-                  {/* Bottom brand/price bar */}
-                  <View className="flex-row items-center justify-between mt-4">
-                    <Text className="text-text font-urbanist-bold text-2xl">
-                      AerisGo
-                    </Text>
-                    <Text className="text-text font-urbanist-bold text-xl">
-                      ₹ {returnPrice}
-                    </Text>
+                  <View className="space-y-3">
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-primary/70 font-urbanist-medium text-sm">
+                        Flight Number
+                      </Text>
+                      <Text className="text-primary font-urbanist-semibold text-sm">
+                        {returnFlight.flightNumber || "AG-102"}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-primary/70 font-urbanist-medium text-sm">
+                        Aircraft
+                      </Text>
+                      <Text className="text-primary font-urbanist-semibold text-sm">
+                        {returnFlight.aircraft || "A320 Neo"}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-primary/70 font-urbanist-medium text-sm">
+                        Date
+                      </Text>
+                      <Text className="text-primary font-urbanist-semibold text-sm">
+                        {new Date(returnDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-primary/70 font-urbanist-medium text-sm">
+                        Passengers
+                      </Text>
+                      <Text className="text-primary font-urbanist-semibold text-sm">
+                        {passengers || 1}
+                      </Text>
+                    </View>
                   </View>
                 </View>
+              </>
+            )}
 
-                {/* Ticket notches */}
-                <Notch side="left" />
-                <Notch side="right" />
+            {/* Amenities */}
+            <View className="mt-6 mb-4">
+              <Text className="text-primary font-urbanist-bold text-base mb-4">
+                Amenities
+              </Text>
+              <View className="flex-row flex-wrap gap-3">
+                {[
+                  { icon: "wifi", label: "Wi-Fi" },
+                  { icon: "restaurant", label: "Meals" },
+                  { icon: "tv", label: "Entertainment" },
+                  { icon: "briefcase", label: "Baggage" },
+                ].map((item, i) => (
+                  <View
+                    key={i}
+                    className="bg-secondary/40 rounded-[20px] px-5 py-4 items-center border border-primary/10"
+                    style={{ width: "22%" }}
+                  >
+                    <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center mb-2">
+                      <Ionicons name={item.icon} size={20} color="#541424" />
+                    </View>
+                    <Text className="text-primary font-urbanist-medium text-xs text-center">
+                      {item.label}
+                    </Text>
+                  </View>
+                ))}
               </View>
+            </View>
 
-              {/* Return Flight Info Section */}
-              <View className="mt-6 bg-secondary/40 rounded-[24px] p-5 border border-primary/10">
-                <Text className="text-primary font-urbanist-bold text-base mb-4">
-                  Return Flight Information
-                </Text>
-
-                <View className="space-y-3">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-primary/70 font-urbanist-medium text-sm">
-                      Flight Number
-                    </Text>
-                    <Text className="text-primary font-urbanist-semibold text-sm">
-                      {returnFlight.flightNumber || "AG-102"}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-primary/70 font-urbanist-medium text-sm">
-                      Aircraft
-                    </Text>
-                    <Text className="text-primary font-urbanist-semibold text-sm">
-                      {returnFlight.aircraft || "A320 Neo"}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-primary/70 font-urbanist-medium text-sm">
-                      Date
-                    </Text>
-                    <Text className="text-primary font-urbanist-semibold text-sm">
-                      {new Date(returnDate).toLocaleDateString()}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-primary/70 font-urbanist-medium text-sm">
-                      Passengers
-                    </Text>
-                    <Text className="text-primary font-urbanist-semibold text-sm">
-                      {passengers || 1}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </>
-          )}
-
-          {/* Amenities */}
-          <View className="mt-6 mb-4">
-            <Text className="text-primary font-urbanist-bold text-base mb-4">
-              Amenities
-            </Text>
-            <View className="flex-row flex-wrap gap-3">
-              {[
-                { icon: "wifi", label: "Wi-Fi" },
-                { icon: "restaurant", label: "Meals" },
-                { icon: "tv", label: "Entertainment" },
-                { icon: "briefcase", label: "Baggage" },
-              ].map((item, i) => (
-                <View
-                  key={i}
-                  className="bg-secondary/40 rounded-[20px] px-5 py-4 items-center border border-primary/10"
-                  style={{ width: "22%" }}
-                >
-                  <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center mb-2">
-                    <Ionicons name={item.icon} size={20} color="#541424" />
-                  </View>
-                  <Text className="text-primary font-urbanist-medium text-xs text-center">
-                    {item.label}
-                  </Text>
-                </View>
-              ))}
+            {/* Select Seat Button - Inside scrollable content */}
+            <View className="mt-8 mb-4">
+              <PrimaryButton title="Select Seat" onPress={handleSelectSeat} />
             </View>
           </View>
-
-          {/* Select Seat Button - Inside scrollable content */}
-          <View className="mt-8 mb-4">
-            <PrimaryButton title="Select Seat" onPress={handleSelectSeat} />
-          </View>
-        </Animated.View>
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
     </View>
   );
 }
