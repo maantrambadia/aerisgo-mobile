@@ -246,44 +246,40 @@ export default function UserDocuments() {
         scrollable={false}
         minHeight="40%"
         maxHeight="50%"
+        keyboardAware={true}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1"
-        >
-          <View className="flex-1">
-            <FormInput
-              label="Document Number"
-              placeholder={
-                editingType === "aadhar"
-                  ? "12 digits"
-                  : "1 letter + 7 digits (e.g., A1234567)"
+        <View className="flex-1">
+          <FormInput
+            label="Document Number"
+            placeholder={
+              editingType === "aadhar"
+                ? "12 digits"
+                : "1 letter + 7 digits (e.g., A1234567)"
+            }
+            value={documentNumber}
+            onChangeText={(text) => {
+              if (editingType === "aadhar") {
+                setDocumentNumber(text.replace(/[^0-9]/g, ""));
+              } else {
+                setDocumentNumber(text.toUpperCase());
               }
-              value={documentNumber}
-              onChangeText={(text) => {
-                if (editingType === "aadhar") {
-                  setDocumentNumber(text.replace(/[^0-9]/g, ""));
-                } else {
-                  setDocumentNumber(text.toUpperCase());
-                }
-              }}
-              leftIconName="card-outline"
-              keyboardType={editingType === "aadhar" ? "numeric" : "default"}
-              maxLength={editingType === "aadhar" ? 12 : 8}
-            />
+            }}
+            leftIconName="card-outline"
+            keyboardType={editingType === "aadhar" ? "numeric" : "default"}
+            maxLength={editingType === "aadhar" ? 12 : 8}
+          />
 
-            <View className="mt-4 mb-2">
-              <PrimaryButton
-                title={saving ? "Saving..." : "Save Document"}
-                onPress={handleSave}
-                disabled={saving}
-                withHaptics
-                hapticStyle="medium"
-                className="w-full"
-              />
-            </View>
+          <View className="mt-4 mb-2">
+            <PrimaryButton
+              title={saving ? "Saving..." : "Save Document"}
+              onPress={handleSave}
+              disabled={saving}
+              withHaptics
+              hapticStyle="medium"
+              className="w-full"
+            />
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </BottomSheetModal>
     </View>
   );
