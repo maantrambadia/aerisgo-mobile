@@ -3,7 +3,7 @@ import {
   View,
   Text,
   BackHandler,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Image,
   Pressable,
@@ -14,6 +14,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -50,7 +51,11 @@ const ScalePress = ({ children, onPress, className = "" }) => {
 
 // Profile action card with icon
 const ProfileCard = ({ icon, title, subtitle, onPress, delay = 0 }) => (
-  <Animated.View entering={FadeInDown.duration(400).delay(delay).springify()}>
+  <Animated.View
+    entering={FadeInDown.duration(400)
+      .delay(delay)
+      .easing(Easing.out(Easing.cubic))}
+  >
     <ScalePress onPress={onPress}>
       <View className="bg-secondary/40 border border-primary/10 rounded-[28px] p-4 flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
@@ -103,7 +108,9 @@ const FAQItem = ({ question, answer, delay = 0 }) => {
 
   return (
     <Animated.View
-      entering={FadeInDown.duration(400).delay(delay).springify()}
+      entering={FadeInDown.duration(400)
+        .delay(delay)
+        .easing(Easing.out(Easing.cubic))}
       className="mb-3"
     >
       <TouchableOpacity
@@ -181,9 +188,13 @@ export default function Profile() {
 
   const faqs = [
     {
+      question: "How do I reach support team?",
+      answer: "Contact our support team via the support@aerisgo.in.",
+    },
+    {
       question: "How do I change my flight booking?",
       answer:
-        "Contact our support team via the Help Center. Modifications depend on fare rules and availability.",
+        "Contact our support team via the support@aerisgo.in. Modifications depend on fare rules and availability.",
     },
     {
       question: "What is the baggage allowance?",
@@ -193,7 +204,7 @@ export default function Profile() {
     {
       question: "How do I check-in online?",
       answer:
-        "Online check-in opens 48 hours before departure. Visit our website or use the app to check-in and get your boarding pass.",
+        "Online check-in opens 24 hours before departure. Visit our website or use the app to check-in and get your boarding pass.",
     },
     {
       question: "Can I cancel my booking?",
@@ -210,167 +221,170 @@ export default function Profile() {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Sticky Header */}
+      {/* Grouped Header Section - Single Animated.View */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6 pb-4 bg-background"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="border-b border-primary/10"
       >
-        <Text className="text-primary font-urbanist-bold text-3xl">
-          Profile
-        </Text>
-        <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
-          Manage your account and preferences
-        </Text>
-      </Animated.View>
+        {/* Sticky Header */}
+        <View className="px-6 pt-6 pb-4 bg-background">
+          <Text className="text-primary font-urbanist-bold text-3xl">
+            Profile
+          </Text>
+          <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
+            Manage your account and preferences
+          </Text>
+        </View>
 
-      {/* Sticky Profile Card - Compact */}
-      <Animated.View
-        entering={FadeInDown.duration(600).delay(100).springify()}
-        className="mx-6 mb-4 bg-primary rounded-[36px] p-4 border border-secondary/15"
-      >
-        <View className="flex-row items-center">
-          {/* Avatar */}
-          <View className="w-16 h-16 rounded-full bg-secondary/20 items-center justify-center border-2 border-secondary/30 overflow-hidden mr-4">
-            {avatarSource ? (
-              <Image
-                source={avatarSource}
-                resizeMode="cover"
-                className="w-16 h-[62px] rounded-full mt-2 p-1"
-              />
-            ) : (
-              <Text className="text-secondary font-urbanist-bold text-2xl">
-                ?
+        {/* Sticky Profile Card - Compact */}
+        <View className="mx-6 mb-4 bg-primary rounded-[36px] p-4 border border-secondary/15">
+          <View className="flex-row items-center">
+            {/* Avatar */}
+            <View className="w-16 h-16 rounded-full bg-secondary/20 items-center justify-center border-2 border-secondary/30 overflow-hidden mr-4">
+              {avatarSource ? (
+                <Image
+                  source={avatarSource}
+                  resizeMode="cover"
+                  className="w-16 h-[62px] rounded-full mt-2 p-1"
+                />
+              ) : (
+                <Text className="text-secondary font-urbanist-bold text-2xl">
+                  ?
+                </Text>
+              )}
+            </View>
+
+            {/* Name & Info */}
+            <View className="flex-1">
+              <Text className="text-secondary font-urbanist-bold text-xl">
+                {user?.name || "Traveler"}
               </Text>
-            )}
-          </View>
-
-          {/* Name & Info */}
-          <View className="flex-1">
-            <Text className="text-secondary font-urbanist-bold text-xl">
-              {user?.name || "Traveler"}
-            </Text>
-            <Text className="text-secondary/70 font-urbanist text-sm mt-0.5">
-              {user?.email || "—"}
-            </Text>
-            {/* Info Pills - Horizontal */}
-            <View className="flex-row gap-2 mt-2">
-              <View className="bg-secondary/20 px-3 py-1 rounded-full flex-row items-center gap-1">
-                <Ionicons name="call" size={12} color="#e3d7cb" />
-                <Text className="text-secondary font-urbanist text-xs">
-                  {user?.phone || "—"}
-                </Text>
-              </View>
-              <View className="bg-secondary/20 px-3 py-1 rounded-full flex-row items-center gap-1">
-                <Ionicons name="person" size={12} color="#e3d7cb" />
-                <Text className="text-secondary font-urbanist text-xs capitalize">
-                  {user?.gender || "other"}
-                </Text>
+              <Text className="text-secondary/70 font-urbanist text-sm mt-0.5">
+                {user?.email || "—"}
+              </Text>
+              {/* Info Pills - Horizontal */}
+              <View className="flex-row gap-2 mt-2">
+                <View className="bg-secondary/20 px-3 py-1 rounded-full flex-row items-center gap-1">
+                  <Ionicons name="call" size={12} color="#e3d7cb" />
+                  <Text className="text-secondary font-urbanist text-xs">
+                    {user?.phone || "—"}
+                  </Text>
+                </View>
+                <View className="bg-secondary/20 px-3 py-1 rounded-full flex-row items-center gap-1">
+                  <Ionicons name="person" size={12} color="#e3d7cb" />
+                  <Text className="text-secondary font-urbanist text-xs capitalize">
+                    {user?.gender || "other"}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
         </View>
       </Animated.View>
 
-      <ScrollView
+      <FlatList
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
-        {/* Profile Management Section */}
-        <View className="px-6 mb-6">
-          <Animated.Text
-            entering={FadeInDown.duration(400).delay(200).springify()}
-            className="text-primary font-urbanist-bold text-xl mb-3"
-          >
-            Profile Management
-          </Animated.Text>
-          <View className="gap-3">
-            <ProfileCard
-              icon="person-outline"
-              title="Edit Profile"
-              subtitle="Update your personal information"
-              delay={250}
-              onPress={async () => {
-                try {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                } catch {}
-                router.push("/edit-profile");
-              }}
-            />
-            <ProfileCard
-              icon="lock-closed-outline"
-              title="Change Password"
-              subtitle="Update your account password"
-              delay={300}
-              onPress={async () => {
-                try {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                } catch {}
-                router.push("/change-password");
-              }}
-            />
-            <ProfileCard
-              icon="document-text-outline"
-              title="User Documents"
-              subtitle="Manage Aadhar and Passport"
-              delay={350}
-              onPress={async () => {
-                try {
-                  await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                } catch {}
-                router.push("/user-documents");
-              }}
-            />
-          </View>
-        </View>
+        contentContainerStyle={{ paddingBottom: 128 }}
+        ListHeaderComponent={
+          <>
+            {/* Profile Management Section */}
+            <View className="px-6 mb-6 mt-5">
+              <Text className="text-primary font-urbanist-bold text-xl mb-4">
+                Profile Management
+              </Text>
+              <View className="gap-3">
+                <ProfileCard
+                  icon="person-outline"
+                  title="Edit Profile"
+                  subtitle="Update your personal information"
+                  delay={250}
+                  onPress={async () => {
+                    try {
+                      await Haptics.impactAsync(
+                        Haptics.ImpactFeedbackStyle.Medium
+                      );
+                    } catch {}
+                    router.push("/edit-profile");
+                  }}
+                />
+                <ProfileCard
+                  icon="lock-closed-outline"
+                  title="Change Password"
+                  subtitle="Update your account password"
+                  delay={300}
+                  onPress={async () => {
+                    try {
+                      await Haptics.impactAsync(
+                        Haptics.ImpactFeedbackStyle.Medium
+                      );
+                    } catch {}
+                    router.push("/change-password");
+                  }}
+                />
+                <ProfileCard
+                  icon="document-text-outline"
+                  title="User Documents"
+                  subtitle="Manage Aadhar and Passport"
+                  delay={350}
+                  onPress={async () => {
+                    try {
+                      await Haptics.impactAsync(
+                        Haptics.ImpactFeedbackStyle.Medium
+                      );
+                    } catch {}
+                    router.push("/user-documents");
+                  }}
+                />
+              </View>
+            </View>
 
-        {/* FAQs Section */}
-        <View className="px-6 mb-6">
-          <Animated.Text
-            entering={FadeInDown.duration(400).delay(400).springify()}
-            className="text-primary font-urbanist-bold text-xl mb-3"
-          >
-            Frequently Asked Questions
-          </Animated.Text>
-          {faqs.map((faq, idx) => (
+            {/* FAQs Section */}
+            <View className="px-6 mb-6">
+              <Text className="text-primary font-urbanist-bold text-xl">
+                Frequently Asked Questions
+              </Text>
+            </View>
+          </>
+        }
+        data={faqs}
+        keyExtractor={(item, idx) => `faq-${idx}`}
+        renderItem={({ item: faq, index: idx }) => (
+          <View className="px-6">
             <FAQItem
-              key={idx}
               question={faq.question}
               answer={faq.answer}
               delay={450 + idx * 50}
             />
-          ))}
-        </View>
-
-        {/* Sign Out Button */}
-        <Animated.View
-          entering={FadeInDown.duration(500).delay(150).springify()}
-          className="px-6 mb-32"
-        >
-          <PrimaryButton
-            title="Sign Out"
-            leftIconName="log-out-outline"
-            onPress={async () => {
-              try {
-                await signOut();
-                toast.success({
-                  title: "Signed out",
-                  message: "See you soon!",
-                });
-              } catch (e) {
-                toast.error({
-                  title: "Sign out failed",
-                  message: e?.message || "Try again",
-                });
-              } finally {
-                router.replace("/sign-in");
-              }
-            }}
-            withHaptics
-            hapticStyle="medium"
-            className="w-full"
-          />
-        </Animated.View>
-      </ScrollView>
+          </View>
+        )}
+        ListFooterComponent={
+          <View className="px-6 mb-6 mt-5">
+            <PrimaryButton
+              title="Sign Out"
+              leftIconName="log-out-outline"
+              onPress={async () => {
+                try {
+                  await signOut();
+                  toast.success({
+                    title: "Signed out",
+                    message: "See you soon!",
+                  });
+                } catch (e) {
+                  toast.error({
+                    title: "Sign out failed",
+                    message: e?.message || "Try again",
+                  });
+                } finally {
+                  router.replace("/sign-in");
+                }
+              }}
+              withHaptics
+              hapticStyle="medium"
+              className="w-full"
+            />
+          </View>
+        }
+      />
     </View>
   );
 }
