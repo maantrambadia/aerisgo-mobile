@@ -3,11 +3,15 @@ import {
   View,
   Text,
   BackHandler,
-  ScrollView,
+  FlatList,
   RefreshControl,
   TouchableOpacity,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
@@ -116,6 +120,13 @@ export default function Tickets() {
     });
   }, [bookings, filter]);
 
+  // Staggered fade-in helper for smooth entry animations
+  const staggeredFadeIn = (index) => {
+    return FadeInUp.delay(index * 50)
+      .duration(400)
+      .easing(Easing.out(Easing.cubic));
+  };
+
   if (loading) {
     return (
       <Loader message="Loading tickets" subtitle="Fetching your bookings" />
@@ -124,53 +135,55 @@ export default function Tickets() {
 
   return (
     <View className="flex-1 bg-background">
+      {/* Grouped Header Section - Single Animated.View */}
       <Animated.View
-        entering={FadeInDown.duration(400).springify()}
-        className="px-6 pt-6 pb-4"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="border-b border-primary/10"
       >
-        <Text className="text-primary font-urbanist-bold text-3xl">
-          My Tickets
-        </Text>
-        <Text className="text-primary/70 font-urbanist mt-1">
-          Manage your flight bookings
-        </Text>
-      </Animated.View>
+        <View className="px-6 pt-6 pb-4">
+          <Text className="text-primary font-urbanist-bold text-3xl">
+            My Tickets
+          </Text>
+          <Text className="text-primary/70 font-urbanist mt-1">
+            Manage your flight bookings
+          </Text>
+        </View>
 
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(100).springify()}
-        className="px-6 mb-4"
-      >
-        <View className="flex-row gap-2">
-          {["upcoming", "past", "cancelled"].map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              onPress={async () => {
-                try {
-                  await Haptics.selectionAsync();
-                } catch {}
-                setFilter(tab);
-              }}
-              activeOpacity={0.7}
-              className={`px-4 py-2 rounded-full ${
-                filter === tab
-                  ? "bg-primary"
-                  : "bg-secondary/40 border border-primary/10"
-              }`}
-            >
-              <Text
-                className={`font-urbanist-semibold text-sm ${
-                  filter === tab ? "text-secondary" : "text-primary"
+        <View className="px-6 pb-4">
+          <View className="flex-row gap-2">
+            {["upcoming", "past", "cancelled"].map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                onPress={async () => {
+                  try {
+                    await Haptics.selectionAsync();
+                  } catch {}
+                  setFilter(tab);
+                }}
+                activeOpacity={0.7}
+                className={`px-4 py-2 rounded-full ${
+                  filter === tab
+                    ? "bg-primary"
+                    : "bg-secondary/40 border border-primary/10"
                 }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  className={`font-urbanist-semibold text-sm ${
+                    filter === tab ? "text-secondary" : "text-primary"
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </Animated.View>
 
-      <ScrollView
-        className="flex-1 px-6"
+      {/* Booking List - FlatList for better performance */}
+      <FlatList
+        data={filteredBookings}
+        keyExtractor={(item) => item._id}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -179,12 +192,13 @@ export default function Tickets() {
             tintColor="#541424"
           />
         }
-      >
-        {filteredBookings.length === 0 ? (
-          <Animated.View
-            entering={FadeInUp.duration(400).delay(200).springify()}
-            className="items-center justify-center py-12"
-          >
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingTop: 0,
+          paddingBottom: 176,
+        }}
+        ListEmptyComponent={
+          <View className="items-center justify-center py-12">
             <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">
               <Ionicons name="ticket-outline" size={40} color="#541424" />
             </View>
@@ -198,19 +212,17 @@ export default function Tickets() {
                   ? "Your completed flights will appear here"
                   : "Your cancelled bookings will appear here"}
             </Text>
-          </Animated.View>
-        ) : (
-          filteredBookings.map((booking, index) => (
-            <BookingCard
-              key={booking._id}
-              booking={booking}
-              delay={index * 50}
-              onPress={() => handleBookingPress(booking)}
-            />
-          ))
+          </View>
+        }
+        renderItem={({ item: booking, index }) => (
+          <BookingCard
+            key={booking._id}
+            booking={booking}
+            delay={index * 50}
+            onPress={() => handleBookingPress(booking)}
+          />
         )}
-        <View className="h-44" />
-      </ScrollView>
+      />
 
       <BookingDetailsModal
         visible={showDetailsModal}
