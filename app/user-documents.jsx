@@ -7,7 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, Easing } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -147,8 +147,8 @@ export default function UserDocuments() {
     <View className="flex-1 bg-background">
       {/* Header */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6 pb-4 bg-background flex-row items-center justify-between"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-6 pb-4 bg-background flex-row items-center justify-between border-b border-primary/10"
       >
         <TouchableOpacity
           className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
@@ -171,76 +171,71 @@ export default function UserDocuments() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        <View className="px-6 mt-4">
-          {
-            <>
-              {["aadhar", "passport"].map((type, idx) => {
-                const doc = documents.find((d) => d.documentType === type);
-                return (
-                  <Animated.View
-                    key={type}
-                    entering={FadeInDown.duration(400)
-                      .delay(100 + idx * 50)
-                      .springify()}
-                    className="mb-4"
-                  >
-                    <View className="bg-secondary/40 border border-primary/10 rounded-[28px] p-4">
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-row items-center flex-1">
-                          <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center">
-                            <Ionicons
-                              name={getDocumentIcon(type)}
-                              size={22}
-                              color="#541424"
-                            />
-                          </View>
-                          <View className="ml-4 flex-1">
-                            <Text className="text-primary font-urbanist-semibold text-base">
-                              {getDocumentLabel(type)}
-                            </Text>
-                            {doc ? (
-                              <Text className="text-primary/60 font-urbanist text-sm mt-0.5">
-                                {doc.documentNumber}
-                              </Text>
-                            ) : (
-                              <Text className="text-primary/40 font-urbanist text-sm mt-0.5">
-                                Not added
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                        <View className="flex-row gap-2">
-                          <TouchableOpacity
-                            onPress={() => openAddEdit(type)}
-                            className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-                          >
-                            <Ionicons
-                              name={doc ? "create-outline" : "add"}
-                              size={18}
-                              color="#541424"
-                            />
-                          </TouchableOpacity>
-                          {doc && (
-                            <TouchableOpacity
-                              onPress={() => handleDelete(type)}
-                              className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
-                            >
-                              <Ionicons
-                                name="trash-outline"
-                                size={18}
-                                color="#541424"
-                              />
-                            </TouchableOpacity>
-                          )}
-                        </View>
+        <Animated.View
+          entering={FadeInDown.duration(400)
+            .delay(100)
+            .easing(Easing.out(Easing.cubic))}
+          className="px-6 mt-4"
+        >
+          {["aadhar", "passport"].map((type, idx) => {
+            const doc = documents.find((d) => d.documentType === type);
+            return (
+              <View key={type} className="mb-4">
+                <View className="bg-secondary/40 border border-primary/10 rounded-[28px] p-4">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1">
+                      <View className="w-12 h-12 rounded-full bg-primary/10 items-center justify-center">
+                        <Ionicons
+                          name={getDocumentIcon(type)}
+                          size={22}
+                          color="#541424"
+                        />
+                      </View>
+                      <View className="ml-4 flex-1">
+                        <Text className="text-primary font-urbanist-semibold text-base">
+                          {getDocumentLabel(type)}
+                        </Text>
+                        {doc ? (
+                          <Text className="text-primary/60 font-urbanist text-sm mt-0.5">
+                            {doc.documentNumber}
+                          </Text>
+                        ) : (
+                          <Text className="text-primary/40 font-urbanist text-sm mt-0.5">
+                            Not added
+                          </Text>
+                        )}
                       </View>
                     </View>
-                  </Animated.View>
-                );
-              })}
-            </>
-          }
-        </View>
+                    <View className="flex-row gap-2">
+                      <TouchableOpacity
+                        onPress={() => openAddEdit(type)}
+                        className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+                      >
+                        <Ionicons
+                          name={doc ? "create-outline" : "add"}
+                          size={18}
+                          color="#541424"
+                        />
+                      </TouchableOpacity>
+                      {doc && (
+                        <TouchableOpacity
+                          onPress={() => handleDelete(type)}
+                          className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center"
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={18}
+                            color="#541424"
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </Animated.View>
       </ScrollView>
 
       {/* Add/Edit Modal */}
