@@ -13,6 +13,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -360,8 +361,8 @@ export default function SearchResults() {
     <View className="flex-1 bg-background">
       {/* Header */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-6 pb-4"
       >
         <View className="flex-row items-center justify-between">
           <TouchableOpacity
@@ -393,230 +394,218 @@ export default function SearchResults() {
         </View>
       </Animated.View>
 
-      {/* Stats + route */}
+      {/* Grouped Content Animation */}
       <Animated.View
-        entering={FadeInDown.duration(550).delay(80).springify()}
-        className="px-6 mt-4"
+        entering={FadeInUp.duration(400)
+          .delay(100)
+          .easing(Easing.out(Easing.cubic))}
+        className="flex-1"
       >
-        <View className="flex-row items-start justify-between">
-          <View style={{ maxWidth: "60%" }}>
-            <Text className="text-primary font-urbanist-bold text-3xl leading-9">
-              {countText}
-            </Text>
-            <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
-              Available
-            </Text>
-            {isRoundTrip && (
-              <Text className="text-primary/70 font-urbanist-medium text-sm mt-1">
-                Round Trip
+        {/* Stats + route */}
+        <View className="px-6 mt-4">
+          <View className="flex-row items-start justify-between">
+            <View style={{ maxWidth: "60%" }}>
+              <Text className="text-primary font-urbanist-bold text-3xl leading-9">
+                {countText}
               </Text>
-            )}
-          </View>
-          <RoutePill from={from} to={to} />
-        </View>
-      </Animated.View>
-
-      {/* Chips */}
-      <Animated.View
-        entering={FadeInDown.duration(550).delay(120).springify()}
-        className="px-6 mt-4"
-      >
-        <View className="flex-row items-center gap-3">
-          <Chip label="Economy" variant="primary" />
-          <Chip
-            label="Sort"
-            icon="options-outline"
-            variant="ghost"
-            onPress={async () => {
-              try {
-                await Haptics.selectionAsync();
-              } catch {}
-              setShowFilterModal(true);
-            }}
-          />
-        </View>
-      </Animated.View>
-
-      {/* Scrollable results only */}
-      <Animated.View
-        entering={FadeInUp.duration(600).delay(180).springify()}
-        className="flex-1 px-6 mt-4"
-      >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentInsetAdjustmentBehavior="never"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-        >
-          {loading ? (
-            <View className="mt-8">
-              <Loader
-                message="Searching flights"
-                subtitle="Finding the best options for you"
-                fullscreen={false}
-              />
-            </View>
-          ) : error ? (
-            <View className="mt-8 items-center justify-center">
-              <Text className="text-primary text-center px-6">{error}</Text>
-            </View>
-          ) : sortedFlights.length === 0 ? (
-            <View className="mt-8 items-center justify-center">
-              <Text className="text-primary/80">No flights found</Text>
-            </View>
-          ) : (
-            <>
-              {/* Outbound Flights Section */}
+              <Text className="text-primary font-urbanist-bold text-3xl leading-9 -mt-1">
+                Available
+              </Text>
               {isRoundTrip && (
-                <View className="mb-2">
-                  <Text className="text-primary font-urbanist-bold text-xl">
-                    Select Outbound Flight
-                  </Text>
-                  <Text className="text-primary/60 font-urbanist text-sm">
-                    {from} → {to}
-                  </Text>
-                </View>
+                <Text className="text-primary/70 font-urbanist-medium text-sm mt-1">
+                  Round Trip
+                </Text>
               )}
+            </View>
+            <RoutePill from={from} to={to} />
+          </View>
+        </View>
 
-              {sortedFlights.map((f, i) => (
-                <Animated.View
-                  key={i}
-                  entering={FadeInUp.duration(600)
-                    .delay(200 + i * 60)
-                    .springify()}
-                  className="relative"
-                >
-                  <TicketResultCard
-                    fromCity={from}
-                    toCity={to}
-                    departTime={fmtTime(f.departureTime)}
-                    arriveTime={fmtTime(f.arrivalTime)}
-                    duration={fmtDuration(f.departureTime, f.arrivalTime)}
-                    priceInr={f.baseFare}
-                    onPress={async () => {
-                      try {
-                        await Haptics.impactAsync(
-                          Haptics.ImpactFeedbackStyle.Medium
-                        );
-                      } catch {}
+        {/* Chips */}
+        <View className="px-6 mt-4 pb-4 border-b border-primary/10">
+          <View className="flex-row items-center gap-3">
+            <Chip label="Economy" variant="primary" />
+            <Chip
+              label="Sort"
+              icon="options-outline"
+              variant="ghost"
+              onPress={async () => {
+                try {
+                  await Haptics.selectionAsync();
+                } catch {}
+                setShowFilterModal(true);
+              }}
+            />
+          </View>
+        </View>
 
-                      if (isRoundTrip) {
-                        setSelectedOutbound(f);
-                        toast.success({
-                          title: "Outbound selected",
-                          message: "Now select return flight",
-                        });
-                      } else {
-                        router.push({
-                          pathname: "/flight-details",
-                          params: {
-                            flight: JSON.stringify(f),
-                            from,
-                            to,
-                            date,
-                            passengers,
-                            tripType: "oneway",
-                          },
-                        });
-                      }
-                    }}
-                  />
-                  {isRoundTrip && selectedOutbound?._id === f._id && (
-                    <View className="absolute top-2 right-2 bg-green-500 px-3 py-1 rounded-full">
-                      <Text className="text-white font-urbanist-bold text-xs">
-                        ✓ Selected
-                      </Text>
-                    </View>
-                  )}
-                </Animated.View>
-              ))}
-
-              {/* Return Flights Section */}
-              {isRoundTrip && returnFlights.length > 0 && (
-                <>
-                  <View className="mt-8 mb-2">
+        {/* Scrollable results */}
+        <View className="flex-1 px-6">
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="never"
+            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          >
+            {loading ? (
+              <View className="mt-8">
+                <Loader
+                  message="Searching flights"
+                  subtitle="Finding the best options for you"
+                  fullscreen={false}
+                />
+              </View>
+            ) : error ? (
+              <View className="mt-8 items-center justify-center">
+                <Text className="text-primary text-center px-6">{error}</Text>
+              </View>
+            ) : sortedFlights.length === 0 ? (
+              <View className="mt-8 items-center justify-center">
+                <Text className="text-primary/80">No flights found</Text>
+              </View>
+            ) : (
+              <>
+                {/* Outbound Flights Section */}
+                {isRoundTrip && (
+                  <View className="mb-2">
                     <Text className="text-primary font-urbanist-bold text-xl">
-                      Select Return Flight
+                      Select Outbound Flight
                     </Text>
                     <Text className="text-primary/60 font-urbanist text-sm">
-                      {to} → {from}
+                      {from} → {to}
                     </Text>
                   </View>
+                )}
 
-                  {returnFlights.map((f, i) => (
-                    <Animated.View
-                      key={`return-${i}`}
-                      entering={FadeInUp.duration(600)
-                        .delay(200 + i * 60)
-                        .springify()}
-                      className="relative"
-                    >
-                      <TicketResultCard
-                        fromCity={to}
-                        toCity={from}
-                        departTime={fmtTime(f.departureTime)}
-                        arriveTime={fmtTime(f.arrivalTime)}
-                        duration={fmtDuration(f.departureTime, f.arrivalTime)}
-                        priceInr={f.baseFare}
-                        onPress={async () => {
-                          try {
-                            await Haptics.impactAsync(
-                              Haptics.ImpactFeedbackStyle.Medium
-                            );
-                          } catch {}
+                {sortedFlights.map((f, i) => (
+                  <View key={i} className="relative">
+                    <TicketResultCard
+                      fromCity={from}
+                      toCity={to}
+                      departTime={fmtTime(f.departureTime)}
+                      arriveTime={fmtTime(f.arrivalTime)}
+                      duration={fmtDuration(f.departureTime, f.arrivalTime)}
+                      priceInr={f.baseFare}
+                      onPress={async () => {
+                        try {
+                          await Haptics.impactAsync(
+                            Haptics.ImpactFeedbackStyle.Medium
+                          );
+                        } catch {}
 
-                          if (!selectedOutbound) {
-                            toast.warn({
-                              title: "Select outbound first",
-                              message: "Please select an outbound flight",
-                            });
-                            return;
-                          }
-
-                          setSelectedReturn(f);
-
-                          // Navigate to flight details with both flights
+                        if (isRoundTrip) {
+                          setSelectedOutbound(f);
+                          toast.success({
+                            title: "Outbound selected",
+                            message: "Now select return flight",
+                          });
+                        } else {
                           router.push({
                             pathname: "/flight-details",
                             params: {
-                              outboundFlight: JSON.stringify(selectedOutbound),
-                              returnFlight: JSON.stringify(f),
+                              flight: JSON.stringify(f),
                               from,
                               to,
                               date,
-                              returnDate,
                               passengers,
-                              tripType: "roundtrip",
+                              tripType: "oneway",
                             },
                           });
-                        }}
-                      />
-                      {selectedReturn?._id === f._id && (
-                        <View className="absolute top-2 right-2 bg-green-500 px-3 py-1 rounded-full">
-                          <Text className="text-white font-urbanist-bold text-xs">
-                            ✓ Selected
-                          </Text>
-                        </View>
-                      )}
-                    </Animated.View>
-                  ))}
-                </>
-              )}
+                        }
+                      }}
+                    />
+                    {isRoundTrip && selectedOutbound?._id === f._id && (
+                      <View className="absolute top-2 right-2 bg-green-500 px-3 py-1 rounded-full">
+                        <Text className="text-white font-urbanist-bold text-xs">
+                          ✓ Selected
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
 
-              {/* No Return Flights Message */}
-              {isRoundTrip && returnFlights.length === 0 && !loading && (
-                <View className="mt-8 p-6 bg-amber-50 rounded-3xl border border-amber-200">
-                  <Text className="text-amber-800 font-urbanist-bold text-lg mb-2">
-                    No Return Flights Available
-                  </Text>
-                  <Text className="text-amber-700 font-urbanist text-sm">
-                    Unfortunately, there are no return flights from {to} to{" "}
-                    {from} on the selected date.
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
-        </ScrollView>
+                {/* Return Flights Section */}
+                {isRoundTrip && returnFlights.length > 0 && (
+                  <>
+                    <View className="mt-8 mb-2">
+                      <Text className="text-primary font-urbanist-bold text-xl">
+                        Select Return Flight
+                      </Text>
+                      <Text className="text-primary/60 font-urbanist text-sm">
+                        {to} → {from}
+                      </Text>
+                    </View>
+
+                    {returnFlights.map((f, i) => (
+                      <View key={`return-${i}`} className="relative">
+                        <TicketResultCard
+                          fromCity={to}
+                          toCity={from}
+                          departTime={fmtTime(f.departureTime)}
+                          arriveTime={fmtTime(f.arrivalTime)}
+                          duration={fmtDuration(f.departureTime, f.arrivalTime)}
+                          priceInr={f.baseFare}
+                          onPress={async () => {
+                            try {
+                              await Haptics.impactAsync(
+                                Haptics.ImpactFeedbackStyle.Medium
+                              );
+                            } catch {}
+
+                            if (!selectedOutbound) {
+                              toast.warn({
+                                title: "Select outbound first",
+                                message: "Please select an outbound flight",
+                              });
+                              return;
+                            }
+
+                            setSelectedReturn(f);
+
+                            // Navigate to flight details with both flights
+                            router.push({
+                              pathname: "/flight-details",
+                              params: {
+                                outboundFlight:
+                                  JSON.stringify(selectedOutbound),
+                                returnFlight: JSON.stringify(f),
+                                from,
+                                to,
+                                date,
+                                returnDate,
+                                passengers,
+                                tripType: "roundtrip",
+                              },
+                            });
+                          }}
+                        />
+                        {selectedReturn?._id === f._id && (
+                          <View className="absolute top-2 right-2 bg-green-500 px-3 py-1 rounded-full">
+                            <Text className="text-white font-urbanist-bold text-xs">
+                              ✓ Selected
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {/* No Return Flights Message */}
+                {isRoundTrip && returnFlights.length === 0 && !loading && (
+                  <View className="mt-8 p-6 bg-amber-50 rounded-3xl border border-amber-200">
+                    <Text className="text-amber-800 font-urbanist-bold text-lg mb-2">
+                      No Return Flights Available
+                    </Text>
+                    <Text className="text-amber-700 font-urbanist text-sm">
+                      Unfortunately, there are no return flights from {to} to{" "}
+                      {from} on the selected date.
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </ScrollView>
+        </View>
       </Animated.View>
 
       {/* Filter/Sort Modal */}
