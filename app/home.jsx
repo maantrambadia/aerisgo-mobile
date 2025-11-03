@@ -17,6 +17,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  Easing,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -260,7 +261,7 @@ export default function Home() {
       <StatusBar barStyle="dark-content" backgroundColor="#e3d0bf" />
       {/* Hero header */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
         className="relative bg-background px-6 pt-6 pb-8 rounded-b-[32px]"
       >
         {/* Top row: avatar + greeting+name + bell */}
@@ -292,8 +293,6 @@ export default function Home() {
             <Ionicons name="notifications-outline" size={22} color="#541424" />
           </TouchableOpacity>
         </View>
-
-        {/* Greeting moved inline with avatar */}
 
         {/* Tagline */}
         <View className="mt-6 mb-3">
@@ -340,7 +339,9 @@ export default function Home() {
 
       {/* Search card */}
       <Animated.View
-        entering={FadeInUp.duration(600).delay(150).springify()}
+        entering={FadeInUp.duration(600)
+          .delay(150)
+          .easing(Easing.out(Easing.cubic))}
         className="px-6 mt-0"
       >
         <View className="relative">
