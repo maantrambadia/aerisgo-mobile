@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   RefreshControl,
   Pressable,
   BackHandler,
@@ -11,7 +11,8 @@ import {
 import Animated, {
   FadeInDown,
   FadeInUp,
-  Layout,
+  Easing,
+  withTiming,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -143,6 +144,13 @@ export default function RewardsScreen() {
     return date.toLocaleDateString();
   };
 
+  // Staggered fade-in helper for smooth entry animations
+  const staggeredFadeIn = (index) => {
+    return FadeInUp.delay(index * 50)
+      .duration(400)
+      .easing(Easing.out(Easing.cubic));
+  };
+
   if (loading) {
     return (
       <Loader
@@ -154,216 +162,202 @@ export default function RewardsScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Sticky Header */}
+      {/* Grouped Header Section - Single Animated.View */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6 pb-4 bg-background"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="border-b border-primary/10"
       >
-        <Text className="text-primary font-urbanist-bold text-3xl">
-          Rewards
-        </Text>
-        <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
-          Earn points with every flight
-        </Text>
-      </Animated.View>
+        {/* Sticky Header */}
+        <View className="px-6 pt-6 pb-4 bg-background">
+          <Text className="text-primary font-urbanist-bold text-3xl">
+            Rewards
+          </Text>
+          <Text className="text-primary/70 font-urbanist-medium text-base mt-1">
+            Earn points with every flight
+          </Text>
+        </View>
 
-      {/* Sticky Balance Card */}
-      <Animated.View
-        entering={FadeInDown.duration(600).delay(100).springify()}
-        className="mx-6 mb-6 overflow-hidden rounded-[36px] bg-primary border border-secondary/15"
-      >
-        <View className="p-6">
-          {/* Decorative circles */}
-          <View className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
-          <View className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5" />
+        {/* Sticky Balance Card */}
+        <View className="mx-6 mb-6 overflow-hidden rounded-[36px] bg-primary border border-secondary/15">
+          <View className="p-6">
+            {/* Decorative circles */}
+            <View className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/5" />
+            <View className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/5" />
 
-          <View className="relative z-10">
-            <View className="flex-row items-center gap-2 mb-2">
-              <Ionicons name="gift" size={20} color="#e3d7cb" />
-              <Text className="text-text/80 font-urbanist text-sm">
-                Available Balance
+            <View className="relative z-10">
+              <View className="flex-row items-center gap-2 mb-2">
+                <Ionicons name="gift" size={20} color="#e3d7cb" />
+                <Text className="text-text/80 font-urbanist text-sm">
+                  Available Balance
+                </Text>
+              </View>
+              <Text className="text-5xl font-urbanist-bold text-text mb-6">
+                {balance.toLocaleString()}
               </Text>
-            </View>
-            <Text className="text-5xl font-urbanist-bold text-text mb-6">
-              {balance.toLocaleString()}
-            </Text>
 
-            {/* Stats Row */}
-            <View className="flex-row justify-between">
-              <View>
-                <Text className="text-text/60 font-urbanist text-xs mb-1">
-                  Total Earned
-                </Text>
-                <Text className="text-text font-urbanist-semibold text-lg">
-                  {stats.totalEarned.toLocaleString()}
-                </Text>
-              </View>
-              <View>
-                <Text className="text-text/60 font-urbanist text-xs mb-1">
-                  Total Redeemed
-                </Text>
-                <Text className="text-text font-urbanist-semibold text-lg">
-                  {stats.totalRedeemed.toLocaleString()}
-                </Text>
-              </View>
-              <View>
-                <Text className="text-text/60 font-urbanist text-xs mb-1">
-                  Transactions
-                </Text>
-                <Text className="text-text font-urbanist-semibold text-lg">
-                  {stats.transactionCount}
-                </Text>
+              {/* Stats Row */}
+              <View className="flex-row justify-between">
+                <View>
+                  <Text className="text-text/60 font-urbanist text-xs mb-1">
+                    Total Earned
+                  </Text>
+                  <Text className="text-text font-urbanist-semibold text-lg">
+                    {stats.totalEarned.toLocaleString()}
+                  </Text>
+                </View>
+                <View>
+                  <Text className="text-text/60 font-urbanist text-xs mb-1">
+                    Total Redeemed
+                  </Text>
+                  <Text className="text-text font-urbanist-semibold text-lg">
+                    {stats.totalRedeemed.toLocaleString()}
+                  </Text>
+                </View>
+                <View>
+                  <Text className="text-text/60 font-urbanist text-xs mb-1">
+                    Transactions
+                  </Text>
+                  <Text className="text-text font-urbanist-semibold text-lg">
+                    {stats.transactionCount}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
         </View>
-      </Animated.View>
 
-      {/* Recent Activity Header - Sticky */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(200).springify()}
-        className="mx-6 mb-4"
-      >
-        <Text className="text-lg font-urbanist-bold text-primary">
-          Recent Activity
-        </Text>
-      </Animated.View>
+        {/* Recent Activity Header - Sticky */}
+        <View className="mx-6 mb-4">
+          <Text className="text-lg font-urbanist-bold text-primary">
+            Recent Activity
+          </Text>
+        </View>
 
-      {/* Filter Tabs - Sticky */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(250).springify()}
-        className="mx-6 mb-4"
-      >
-        <BlurView
-          intensity={20}
-          tint="light"
-          className="flex-row rounded-[28px] overflow-hidden border border-primary/10"
-        >
-          {["all", "earn", "redeem"].map((f) => (
-            <Pressable
-              key={f}
-              onPress={() => handleFilterPress(f)}
-              className={`flex-1 py-3 items-center ${
-                filter === f ? "bg-primary" : "bg-transparent"
-              }`}
-            >
-              <Text
-                className={`font-urbanist-semibold text-sm capitalize ${
-                  filter === f ? "text-text" : "text-primary/60"
+        {/* Filter Tabs - Sticky */}
+        <View className="mx-6 mb-4">
+          <BlurView
+            intensity={20}
+            tint="light"
+            className="flex-row rounded-[28px] overflow-hidden border border-primary/10"
+          >
+            {["all", "earn", "redeem"].map((f) => (
+              <Pressable
+                key={f}
+                onPress={() => handleFilterPress(f)}
+                className={`flex-1 py-3 items-center ${
+                  filter === f ? "bg-primary" : "bg-transparent"
                 }`}
               >
-                {f}
-              </Text>
-            </Pressable>
-          ))}
-        </BlurView>
+                <Text
+                  className={`font-urbanist-semibold text-sm capitalize ${
+                    filter === f ? "text-text" : "text-primary/60"
+                  }`}
+                >
+                  {f}
+                </Text>
+              </Pressable>
+            ))}
+          </BlurView>
+        </View>
       </Animated.View>
 
-      {/* Transaction History - Scrollable */}
-      <ScrollView
+      {/* Transaction History - FlatList for better performance */}
+      <FlatList
+        data={filteredTransactions}
+        keyExtractor={(item) => item._id}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        contentContainerStyle={{ paddingBottom: 40 }}
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isCloseToBottom =
-            layoutMeasurement.height + contentOffset.y >=
-            contentSize.height - 100;
-          if (isCloseToBottom && hasMore && !loadingMore) {
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingTop: 20,
+          paddingBottom: 100,
+        }}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ListEmptyComponent={
+          <View className="py-12 items-center">
+            <Ionicons
+              name="receipt-outline"
+              size={48}
+              color="#541424"
+              opacity={0.3}
+            />
+            <Text className="text-primary/40 font-urbanist text-sm mt-3">
+              No transactions yet
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          <>
+            {loadingMore && (
+              <View className="py-6 items-center">
+                <ActivityIndicator size="small" color="#541424" />
+                <Text className="text-primary/60 font-urbanist text-sm mt-2">
+                  Loading more...
+                </Text>
+              </View>
+            )}
+            {!hasMore && filteredTransactions.length > 0 && (
+              <View className="py-10 items-center">
+                <Text className="text-primary/40 font-urbanist text-sm">
+                  No more transactions
+                </Text>
+              </View>
+            )}
+          </>
+        }
+        onEndReached={() => {
+          if (hasMore && !loadingMore) {
             loadMoreTransactions();
           }
         }}
-        scrollEventThrottle={400}
-      >
-        <Animated.View
-          entering={FadeInDown.duration(400).delay(300).springify()}
-          className="mx-6 mb-20"
-        >
-          {filteredTransactions.length === 0 ? (
-            <View className="py-12 items-center">
-              <Ionicons
-                name="receipt-outline"
-                size={48}
-                color="#541424"
-                opacity={0.3}
-              />
-              <Text className="text-primary/40 font-urbanist text-sm mt-3">
-                No transactions yet
-              </Text>
-            </View>
-          ) : (
-            <View className="gap-3">
-              {filteredTransactions.map((txn, index) => (
-                <Animated.View
-                  key={txn._id}
-                  entering={FadeInUp.delay(index * 50)}
-                  layout={Layout.springify()}
-                >
-                  <BlurView
-                    intensity={40}
-                    tint="light"
-                    className="rounded-[28px] overflow-hidden border border-primary/10"
+        onEndReachedThreshold={0.3}
+        renderItem={({ item: txn, index }) => (
+          <Animated.View entering={staggeredFadeIn(index)}>
+            <BlurView
+              intensity={40}
+              tint="light"
+              className="rounded-[28px] overflow-hidden border border-primary/10"
+            >
+              <View className="p-4 flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3 flex-1">
+                  <View
+                    className="h-12 w-12 rounded-full items-center justify-center"
+                    style={{
+                      backgroundColor: `${getTransactionColor(txn.type)}15`,
+                    }}
                   >
-                    <View className="p-4 flex-row items-center justify-between">
-                      <View className="flex-row items-center gap-3 flex-1">
-                        <View
-                          className="h-12 w-12 rounded-full items-center justify-center"
-                          style={{
-                            backgroundColor: `${getTransactionColor(txn.type)}15`,
-                          }}
-                        >
-                          <Ionicons
-                            name={getTransactionIcon(txn.type)}
-                            size={24}
-                            color={getTransactionColor(txn.type)}
-                          />
-                        </View>
-                        <View className="flex-1">
-                          <Text className="text-primary font-urbanist-semibold text-base">
-                            {txn.description ||
-                              (txn.type === "earn"
-                                ? "Points Earned"
-                                : "Points Redeemed")}
-                          </Text>
-                          <Text className="text-primary/50 font-urbanist text-xs mt-0.5">
-                            {formatDate(txn.createdAt)}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text
-                        className="font-urbanist-bold text-lg"
-                        style={{ color: getTransactionColor(txn.type) }}
-                      >
-                        {txn.type === "earn" ? "+" : "-"}
-                        {txn.points}
-                      </Text>
-                    </View>
-                  </BlurView>
-                </Animated.View>
-              ))}
-            </View>
-          )}
-          {/* Load More Indicator */}
-          {loadingMore && (
-            <View className="py-6 items-center">
-              <ActivityIndicator size="small" color="#541424" />
-              <Text className="text-primary/60 font-urbanist text-sm mt-2">
-                Loading more...
-              </Text>
-            </View>
-          )}
-          {/* End of List Indicator */}
-          {!hasMore && filteredTransactions.length > 0 && (
-            <View className="py-6 items-center">
-              <Text className="text-primary/40 font-urbanist text-sm">
-                No more transactions
-              </Text>
-            </View>
-          )}
-        </Animated.View>
-      </ScrollView>
+                    <Ionicons
+                      name={getTransactionIcon(txn.type)}
+                      size={24}
+                      color={getTransactionColor(txn.type)}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-primary font-urbanist-semibold text-base">
+                      {txn.description ||
+                        (txn.type === "earn"
+                          ? "Points Earned"
+                          : "Points Redeemed")}
+                    </Text>
+                    <Text className="text-primary/50 font-urbanist text-xs mt-0.5">
+                      {formatDate(txn.createdAt)}
+                    </Text>
+                  </View>
+                </View>
+                <Text
+                  className="font-urbanist-bold text-lg"
+                  style={{ color: getTransactionColor(txn.type) }}
+                >
+                  {txn.type === "earn" ? "+" : "-"}
+                  {txn.points}
+                </Text>
+              </View>
+            </BlurView>
+          </Animated.View>
+        )}
+      />
     </View>
   );
 }
