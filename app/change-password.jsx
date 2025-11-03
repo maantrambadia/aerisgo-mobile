@@ -7,7 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, Easing } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -92,8 +92,8 @@ export default function ChangePassword() {
     <View className="flex-1 bg-background">
       {/* Header */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-6 pb-4 bg-background flex-row items-center justify-between"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-6 pb-4 bg-background flex-row items-center justify-between border-b border-primary/10"
       >
         <TouchableOpacity
           className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
@@ -121,24 +121,22 @@ export default function ChangePassword() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: 100 }}
         >
-          <View className="px-6 mt-4">
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(100).springify()}
-            >
-              <FormInput
-                label="Current Password"
-                placeholder="Enter current password"
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                leftIconName="lock-closed-outline"
-                secureTextEntry
-              />
-            </Animated.View>
+          <Animated.View
+            entering={FadeInDown.duration(400)
+              .delay(100)
+              .easing(Easing.out(Easing.cubic))}
+            className="px-6 mt-4"
+          >
+            <FormInput
+              label="Current Password"
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              leftIconName="lock-closed-outline"
+              secureTextEntry
+            />
 
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(150).springify()}
-              className="mt-4"
-            >
+            <View className="mt-4">
               <FormInput
                 label="New Password"
                 placeholder="Enter new password"
@@ -147,12 +145,9 @@ export default function ChangePassword() {
                 leftIconName="lock-closed-outline"
                 secureTextEntry
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(200).springify()}
-              className="mt-4"
-            >
+            <View className="mt-4">
               <FormInput
                 label="Confirm New Password"
                 placeholder="Confirm new password"
@@ -161,12 +156,9 @@ export default function ChangePassword() {
                 leftIconName="lock-closed-outline"
                 secureTextEntry
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(250).springify()}
-              className="mt-8"
-            >
+            <View className="mt-8">
               <PrimaryButton
                 title={loading ? "Changing..." : "Change Password"}
                 onPress={handleChangePassword}
@@ -175,8 +167,8 @@ export default function ChangePassword() {
                 hapticStyle="medium"
                 className="w-full"
               />
-            </Animated.View>
-          </View>
+            </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
