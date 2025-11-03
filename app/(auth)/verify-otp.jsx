@@ -9,7 +9,11 @@ import {
   Platform,
   TextInput,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from "react-native-reanimated";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -182,8 +186,8 @@ export default function VerifyOtp() {
     <View className="flex-1 bg-background">
       {/* Fixed Header: Brand + Back */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-8 pb-4"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-8 pb-4 border-b border-primary/10"
       >
         <View className="flex-row items-center">
           <TouchableOpacity
@@ -217,105 +221,100 @@ export default function VerifyOtp() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          {/* Header */}
-          <View className="px-6 mt-4">
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(100).springify()}
-              className="text-primary font-urbanist-bold text-3xl"
-            >
-              Verify OTP
-            </Animated.Text>
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(150).springify()}
-              className="text-primary opacity-80 font-urbanist-medium mt-2"
-            >
-              Enter the 6-digit code sent to {maskedEmail}.
-            </Animated.Text>
-          </View>
-
-          {/* OTP Input */}
+          {/* Grouped Content Animation */}
           <Animated.View
-            entering={FadeInUp.duration(600).delay(250).springify()}
-            className="px-6 mt-8 gap-4"
+            entering={FadeInUp.duration(400)
+              .delay(100)
+              .easing(Easing.out(Easing.cubic))}
           >
-            <Text className="text-primary font-urbanist-semibold mb-1">
-              One-Time Password
-            </Text>
-            <View className="flex-row justify-between gap-2">
-              {digits.map((d, i) => (
-                <TextInput
-                  key={i}
-                  ref={(ref) => (inputsRef.current[i] = ref)}
-                  value={d}
-                  onChangeText={(t) => {
-                    const cleaned = (t || "").replace(/\D/g, "");
-                    // Handle paste of multiple chars
-                    if (cleaned.length > 1) {
-                      const next = [...digits];
-                      for (let k = 0; k < 6 - i; k++) {
-                        next[i + k] = cleaned[k] || "";
-                      }
-                      const clipped = next.map((x) => x.slice(0, 1));
-                      setDigits(clipped);
-                      const lastIndex = Math.min(i + cleaned.length, 5);
-                      inputsRef.current[lastIndex]?.focus?.();
-                      return;
-                    }
-                    const next = [...digits];
-                    next[i] = cleaned;
-                    setDigits(next);
-                    if (cleaned && i < 5) {
-                      inputsRef.current[i + 1]?.focus?.();
-                    }
-                  }}
-                  onKeyPress={({ nativeEvent }) => {
-                    if (nativeEvent.key === "Backspace") {
-                      if (digits[i]) {
+            {/* Header */}
+            <View className="px-6 mt-4">
+              <Text className="text-primary font-urbanist-bold text-3xl">
+                Verify OTP
+              </Text>
+              <Text className="text-primary opacity-80 font-urbanist-medium mt-2">
+                Enter the 6-digit code sent to {maskedEmail}.
+              </Text>
+            </View>
+
+            {/* OTP Input */}
+            <View className="px-6 mt-8 gap-4">
+              <Text className="text-primary font-urbanist-semibold mb-1">
+                One-Time Password
+              </Text>
+              <View className="flex-row justify-between gap-2">
+                {digits.map((d, i) => (
+                  <TextInput
+                    key={i}
+                    ref={(ref) => (inputsRef.current[i] = ref)}
+                    value={d}
+                    onChangeText={(t) => {
+                      const cleaned = (t || "").replace(/\D/g, "");
+                      // Handle paste of multiple chars
+                      if (cleaned.length > 1) {
                         const next = [...digits];
-                        next[i] = "";
-                        setDigits(next);
+                        for (let k = 0; k < 6 - i; k++) {
+                          next[i + k] = cleaned[k] || "";
+                        }
+                        const clipped = next.map((x) => x.slice(0, 1));
+                        setDigits(clipped);
+                        const lastIndex = Math.min(i + cleaned.length, 5);
+                        inputsRef.current[lastIndex]?.focus?.();
                         return;
                       }
-                      if (i > 0) {
-                        inputsRef.current[i - 1]?.focus?.();
-                        const next = [...digits];
-                        next[i - 1] = "";
-                        setDigits(next);
+                      const next = [...digits];
+                      next[i] = cleaned;
+                      setDigits(next);
+                      if (cleaned && i < 5) {
+                        inputsRef.current[i + 1]?.focus?.();
                       }
-                    }
-                  }}
-                  keyboardType="number-pad"
-                  maxLength={1}
-                  returnKeyType={i === 5 ? "done" : "next"}
-                  onSubmitEditing={i === 5 ? onVerify : undefined}
-                  className="w-12 h-14 rounded-2xl bg-secondary border border-primary/20 text-center text-primary font-urbanist-semibold text-xl"
-                />
-              ))}
-            </View>
-            <Text className="text-primary/70 font-urbanist text-sm mt-1">
-              Didn’t receive the code?{" "}
-              <Text
-                className={`font-urbanist-semibold ${seconds > 0 ? "opacity-40" : "underline"}`}
-                onPress={onResend}
-              >
-                Resend{seconds > 0 ? ` in ${seconds}s` : ""}
+                    }}
+                    onKeyPress={({ nativeEvent }) => {
+                      if (nativeEvent.key === "Backspace") {
+                        if (digits[i]) {
+                          const next = [...digits];
+                          next[i] = "";
+                          setDigits(next);
+                          return;
+                        }
+                        if (i > 0) {
+                          inputsRef.current[i - 1]?.focus?.();
+                          const next = [...digits];
+                          next[i - 1] = "";
+                          setDigits(next);
+                        }
+                      }
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    returnKeyType={i === 5 ? "done" : "next"}
+                    onSubmitEditing={i === 5 ? onVerify : undefined}
+                    className="w-12 h-14 rounded-2xl bg-secondary border border-primary/20 text-center text-primary font-urbanist-semibold text-xl"
+                  />
+                ))}
+              </View>
+              <Text className="text-primary/70 font-urbanist text-sm mt-1">
+                Didn’t receive the code?{" "}
+                <Text
+                  className={`font-urbanist-semibold ${seconds > 0 ? "opacity-40" : "underline"}`}
+                  onPress={onResend}
+                >
+                  Resend{seconds > 0 ? ` in ${seconds}s` : ""}
+                </Text>
               </Text>
-            </Text>
-          </Animated.View>
+            </View>
 
-          {/* Actions */}
-          <Animated.View
-            entering={FadeInUp.duration(650).delay(350).springify()}
-            className="px-6 mt-8 pb-8"
-          >
-            <PrimaryButton
-              title="Continue"
-              onPress={onVerify}
-              className="w-full"
-              withHaptics
-              hapticStyle="medium"
-              disabled={loading}
-            />
+            {/* Actions */}
+            <View className="px-6 mt-8 pb-8">
+              <PrimaryButton
+                title="Continue"
+                onPress={onVerify}
+                className="w-full"
+                withHaptics
+                hapticStyle="medium"
+                disabled={loading}
+              />
+            </View>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>

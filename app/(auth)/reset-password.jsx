@@ -8,7 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from "react-native-reanimated";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -92,8 +96,8 @@ export default function ResetPassword() {
     <View className="flex-1 bg-background">
       {/* Fixed Header: Brand + Back */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-8 pb-4"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-8 pb-4 border-b border-primary/10"
       >
         <View className="flex-row items-center">
           <TouchableOpacity
@@ -127,61 +131,56 @@ export default function ResetPassword() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          {/* Header */}
-          <View className="px-6 mt-4">
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(100).springify()}
-              className="text-primary font-urbanist-bold text-3xl"
-            >
-              Reset password
-            </Animated.Text>
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(150).springify()}
-              className="text-primary opacity-80 font-urbanist-medium mt-2"
-            >
-              Set a new password for {maskedEmail}.
-            </Animated.Text>
-          </View>
-
-          {/* Form */}
+          {/* Grouped Content Animation */}
           <Animated.View
-            entering={FadeInUp.duration(600).delay(250).springify()}
-            className="px-6 mt-8 gap-4"
+            entering={FadeInUp.duration(400)
+              .delay(100)
+              .easing(Easing.out(Easing.cubic))}
           >
-            <FormInput
-              label="New Password"
-              placeholder="Enter new password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password-new"
-              returnKeyType="next"
-            />
-            <FormInput
-              label="Confirm Password"
-              placeholder="Re-enter new password"
-              value={confirm}
-              onChangeText={setConfirm}
-              secureTextEntry
-              autoComplete="password-new"
-              returnKeyType="done"
-              onSubmitEditing={onSubmit}
-            />
-          </Animated.View>
+            {/* Header */}
+            <View className="px-6 mt-4">
+              <Text className="text-primary font-urbanist-bold text-3xl">
+                Reset password
+              </Text>
+              <Text className="text-primary opacity-80 font-urbanist-medium mt-2">
+                Set a new password for {maskedEmail}.
+              </Text>
+            </View>
 
-          {/* Actions */}
-          <Animated.View
-            entering={FadeInUp.duration(650).delay(350).springify()}
-            className="px-6 mt-8 pb-8"
-          >
-            <PrimaryButton
-              title="Update password"
-              onPress={onSubmit}
-              className="w-full"
-              withHaptics
-              hapticStyle="medium"
-              disabled={loading}
-            />
+            {/* Form */}
+            <View className="px-6 mt-8 gap-4">
+              <FormInput
+                label="New Password"
+                placeholder="Enter new password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete="password-new"
+                returnKeyType="next"
+              />
+              <FormInput
+                label="Confirm Password"
+                placeholder="Re-enter new password"
+                value={confirm}
+                onChangeText={setConfirm}
+                secureTextEntry
+                autoComplete="password-new"
+                returnKeyType="done"
+                onSubmitEditing={onSubmit}
+              />
+            </View>
+
+            {/* Actions */}
+            <View className="px-6 mt-8 pb-8">
+              <PrimaryButton
+                title="Update password"
+                onPress={onSubmit}
+                className="w-full"
+                withHaptics
+                hapticStyle="medium"
+                disabled={loading}
+              />
+            </View>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>

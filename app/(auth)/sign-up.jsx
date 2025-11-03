@@ -8,7 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from "react-native-reanimated";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -148,8 +152,8 @@ export default function SignUp() {
     <View className="flex-1 bg-background">
       {/* Fixed Header: Brand + Back */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-8 pb-4"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-8 pb-4 border-b border-primary/10"
       >
         <View className="flex-row items-center">
           <TouchableOpacity
@@ -183,195 +187,190 @@ export default function SignUp() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          {/* Header */}
-          <View className="px-6 mt-4">
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(100).springify()}
-              className="text-primary font-urbanist-bold text-3xl"
-            >
-              Create your account
-            </Animated.Text>
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(150).springify()}
-              className="text-primary opacity-80 font-urbanist-medium mt-2"
-            >
-              Join AerisGo to book flights seamlessly.
-            </Animated.Text>
-          </View>
-
-          {/* Form */}
+          {/* Grouped Content Animation */}
           <Animated.View
-            entering={FadeInUp.duration(600).delay(250).springify()}
-            className="px-6 mt-8 gap-4"
+            entering={FadeInUp.duration(400)
+              .delay(100)
+              .easing(Easing.out(Easing.cubic))}
           >
-            <FormInput
-              label="Full Name"
-              placeholder="John Doe"
-              value={name}
-              onChangeText={(t) => {
-                const v = formatNameLive(t);
-                setName(v);
-              }}
-              autoCapitalize="words"
-              autoComplete="name"
-              returnKeyType="next"
-            />
-            <FormInput
-              label="Email"
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={(t) => {
-                const v = t.replace(/\s+/g, "");
-                setEmail(v);
-              }}
-              keyboardType="email-address"
-              autoComplete="email"
-              returnKeyType="next"
-            />
-            <FormInput
-              label="Phone"
-              placeholder="9000000000"
-              value={phone}
-              onChangeText={(t) => {
-                const digits = (t || "").replace(/\D/g, "").slice(0, 10);
-                setPhone(digits);
-              }}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-              returnKeyType="next"
-              prefix="+91"
-              maxLength={10}
-            />
-            {/* Gender selector */}
-            <View className="mt-1">
-              <Text className="text-primary font-urbanist-medium mb-2">
-                Gender
+            {/* Header */}
+            <View className="px-6 mt-4">
+              <Text className="text-primary font-urbanist-bold text-3xl">
+                Create your account
               </Text>
-              <View className="flex-row items-center gap-3">
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={async () => {
-                    try {
-                      await Haptics.selectionAsync();
-                    } catch {}
-                    setGender("male");
-                  }}
-                  className={`px-4 py-3 rounded-full border ${gender === "male" ? "bg-primary border-primary" : "bg-secondary/10 border-primary/10"}`}
-                >
-                  <View className="flex-row items-center gap-2">
-                    <Ionicons
-                      name="male"
-                      size={18}
-                      color={gender === "male" ? "#e3d7cb" : "#541424"}
-                    />
-                    <Text
-                      className={`${gender === "male" ? "text-secondary" : "text-primary"} font-urbanist-semibold`}
-                    >
-                      Male
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={async () => {
-                    try {
-                      await Haptics.selectionAsync();
-                    } catch {}
-                    setGender("female");
-                  }}
-                  className={`px-4 py-3 rounded-full border ${gender === "female" ? "bg-primary border-primary" : "bg-secondary/10 border-primary/10"}`}
-                >
-                  <View className="flex-row items-center gap-2">
-                    <Ionicons
-                      name="female"
-                      size={18}
-                      color={gender === "female" ? "#e3d7cb" : "#541424"}
-                    />
-                    <Text
-                      className={`${gender === "female" ? "text-secondary" : "text-primary"} font-urbanist-semibold`}
-                    >
-                      Female
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={async () => {
-                    try {
-                      await Haptics.selectionAsync();
-                    } catch {}
-                    setGender("other");
-                  }}
-                  className={`px-4 py-3 rounded-full border ${gender === "other" ? "bg-primary border-primary" : "bg-secondary/10 border-primary/10"}`}
-                >
-                  <View className="flex-row items-center gap-2">
-                    <Ionicons
-                      name="person-outline"
-                      size={18}
-                      color={gender === "other" ? "#e3d7cb" : "#541424"}
-                    />
-                    <Text
-                      className={`${gender === "other" ? "text-secondary" : "text-primary"} font-urbanist-semibold`}
-                    >
-                      Other
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+              <Text className="text-primary opacity-80 font-urbanist-medium mt-2">
+                Join AerisGo to book flights seamlessly.
+              </Text>
             </View>
-            <FormInput
-              label="Password"
-              placeholder="Enter password"
-              value={password}
-              onChangeText={(t) => {
-                setPassword(t);
-              }}
-              secureTextEntry
-              autoComplete="password-new"
-              returnKeyType="next"
-            />
-            <FormInput
-              label="Confirm Password"
-              placeholder="Re-enter password"
-              value={confirm}
-              onChangeText={(t) => {
-                setConfirm(t);
-              }}
-              secureTextEntry
-              autoComplete="password-new"
-              returnKeyType="done"
-              onSubmitEditing={onSubmit}
-            />
-          </Animated.View>
 
-          {/* Actions */}
-          <Animated.View
-            entering={FadeInUp.duration(650).delay(350).springify()}
-            className="px-6 mt-8 pb-8"
-          >
-            <PrimaryButton
-              title="Sign Up"
-              onPress={onSubmit}
-              className="w-full"
-              withHaptics
-              hapticStyle="medium"
-              disabled={loading}
-            />
-            <View className="items-center mt-4">
-              <Text className="text-primary font-urbanist-medium">
-                Already have an account?{" "}
-                <Text
-                  className="font-urbanist-semibold underline"
-                  onPress={async () => {
-                    try {
-                      await Haptics.selectionAsync();
-                    } catch {}
-                    router.push("/sign-in");
-                  }}
-                >
-                  Sign In
+            {/* Form */}
+            <View className="px-6 mt-8 gap-4">
+              <FormInput
+                label="Full Name"
+                placeholder="John Doe"
+                value={name}
+                onChangeText={(t) => {
+                  const v = formatNameLive(t);
+                  setName(v);
+                }}
+                autoCapitalize="words"
+                autoComplete="name"
+                returnKeyType="next"
+              />
+              <FormInput
+                label="Email"
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={(t) => {
+                  const v = t.replace(/\s+/g, "");
+                  setEmail(v);
+                }}
+                keyboardType="email-address"
+                autoComplete="email"
+                returnKeyType="next"
+              />
+              <FormInput
+                label="Phone"
+                placeholder="9000000000"
+                value={phone}
+                onChangeText={(t) => {
+                  const digits = (t || "").replace(/\D/g, "").slice(0, 10);
+                  setPhone(digits);
+                }}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                returnKeyType="next"
+                prefix="+91"
+                maxLength={10}
+              />
+              {/* Gender selector */}
+              <View className="mt-1">
+                <Text className="text-primary font-urbanist-medium mb-2">
+                  Gender
                 </Text>
-              </Text>
+                <View className="flex-row items-center gap-3">
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      setGender("male");
+                    }}
+                    className={`px-4 py-3 rounded-full border ${gender === "male" ? "bg-primary border-primary" : "bg-secondary/10 border-primary/10"}`}
+                  >
+                    <View className="flex-row items-center gap-2">
+                      <Ionicons
+                        name="male"
+                        size={18}
+                        color={gender === "male" ? "#e3d7cb" : "#541424"}
+                      />
+                      <Text
+                        className={`${gender === "male" ? "text-secondary" : "text-primary"} font-urbanist-semibold`}
+                      >
+                        Male
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      setGender("female");
+                    }}
+                    className={`px-4 py-3 rounded-full border ${gender === "female" ? "bg-primary border-primary" : "bg-secondary/10 border-primary/10"}`}
+                  >
+                    <View className="flex-row items-center gap-2">
+                      <Ionicons
+                        name="female"
+                        size={18}
+                        color={gender === "female" ? "#e3d7cb" : "#541424"}
+                      />
+                      <Text
+                        className={`${gender === "female" ? "text-secondary" : "text-primary"} font-urbanist-semibold`}
+                      >
+                        Female
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      setGender("other");
+                    }}
+                    className={`px-4 py-3 rounded-full border ${gender === "other" ? "bg-primary border-primary" : "bg-secondary/10 border-primary/10"}`}
+                  >
+                    <View className="flex-row items-center gap-2">
+                      <Ionicons
+                        name="person-outline"
+                        size={18}
+                        color={gender === "other" ? "#e3d7cb" : "#541424"}
+                      />
+                      <Text
+                        className={`${gender === "other" ? "text-secondary" : "text-primary"} font-urbanist-semibold`}
+                      >
+                        Other
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <FormInput
+                label="Password"
+                placeholder="Enter password"
+                value={password}
+                onChangeText={(t) => {
+                  setPassword(t);
+                }}
+                secureTextEntry
+                autoComplete="password-new"
+                returnKeyType="next"
+              />
+              <FormInput
+                label="Confirm Password"
+                placeholder="Re-enter password"
+                value={confirm}
+                onChangeText={(t) => {
+                  setConfirm(t);
+                }}
+                secureTextEntry
+                autoComplete="password-new"
+                returnKeyType="done"
+                onSubmitEditing={onSubmit}
+              />
+            </View>
+
+            {/* Actions */}
+            <View className="px-6 mt-8 pb-8">
+              <PrimaryButton
+                title="Sign Up"
+                onPress={onSubmit}
+                className="w-full"
+                withHaptics
+                hapticStyle="medium"
+                disabled={loading}
+              />
+              <View className="items-center mt-4">
+                <Text className="text-primary font-urbanist-medium">
+                  Already have an account?{" "}
+                  <Text
+                    className="font-urbanist-semibold underline"
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      router.push("/sign-in");
+                    }}
+                  >
+                    Sign In
+                  </Text>
+                </Text>
+              </View>
             </View>
           </Animated.View>
         </ScrollView>

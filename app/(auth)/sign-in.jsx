@@ -8,7 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from "react-native-reanimated";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -84,8 +88,8 @@ export default function SignIn() {
     <View className="flex-1 bg-background">
       {/* Fixed Header: Brand + Back */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-8 pb-4"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-8 pb-4 border-b border-primary/10"
       >
         <View className="flex-row items-center">
           <TouchableOpacity
@@ -119,94 +123,89 @@ export default function SignIn() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          {/* Header */}
-          <View className="px-6 mt-4">
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(100).springify()}
-              className="text-primary font-urbanist-bold text-3xl"
-            >
-              Welcome back
-            </Animated.Text>
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(150).springify()}
-              className="text-primary opacity-80 font-urbanist-medium mt-2"
-            >
-              Sign in to continue.
-            </Animated.Text>
-          </View>
-
-          {/* Form */}
+          {/* Grouped Content Animation */}
           <Animated.View
-            entering={FadeInUp.duration(600).delay(250).springify()}
-            className="px-6 mt-8 gap-4"
+            entering={FadeInUp.duration(400)
+              .delay(100)
+              .easing(Easing.out(Easing.cubic))}
           >
-            <FormInput
-              label="Email"
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={(t) => {
-                const v = t.replace(/\s+/g, "");
-                setEmail(v);
-              }}
-              keyboardType="email-address"
-              autoComplete="email"
-              returnKeyType="next"
-            />
-            <FormInput
-              label="Password"
-              placeholder="Enter password"
-              value={password}
-              onChangeText={(t) => {
-                setPassword(t);
-              }}
-              secureTextEntry
-              autoComplete="password"
-              returnKeyType="done"
-              onSubmitEditing={onSubmit}
-            />
-            <View className="items-end">
-              <Text
-                className="text-primary font-urbanist-medium underline"
-                onPress={async () => {
-                  try {
-                    await Haptics.selectionAsync();
-                  } catch {}
-                  router.push("/forgot-password");
-                }}
-              >
-                Forgot password?
+            {/* Header */}
+            <View className="px-6 mt-4">
+              <Text className="text-primary font-urbanist-bold text-3xl">
+                Welcome back
+              </Text>
+              <Text className="text-primary opacity-80 font-urbanist-medium mt-2">
+                Sign in to continue.
               </Text>
             </View>
-          </Animated.View>
 
-          {/* Actions */}
-          <Animated.View
-            entering={FadeInUp.duration(650).delay(350).springify()}
-            className="px-6 mt-8 pb-8"
-          >
-            <PrimaryButton
-              title="Sign In"
-              onPress={onSubmit}
-              className="w-full"
-              withHaptics
-              hapticStyle="medium"
-              disabled={loading}
-            />
-            <View className="items-center mt-4">
-              <Text className="text-primary font-urbanist-medium">
-                Don&apos;t have an account?{" "}
+            {/* Form */}
+            <View className="px-6 mt-8 gap-4">
+              <FormInput
+                label="Email"
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={(t) => {
+                  const v = t.replace(/\s+/g, "");
+                  setEmail(v);
+                }}
+                keyboardType="email-address"
+                autoComplete="email"
+                returnKeyType="next"
+              />
+              <FormInput
+                label="Password"
+                placeholder="Enter password"
+                value={password}
+                onChangeText={(t) => {
+                  setPassword(t);
+                }}
+                secureTextEntry
+                autoComplete="password"
+                returnKeyType="done"
+                onSubmitEditing={onSubmit}
+              />
+              <View className="items-end">
                 <Text
-                  className="font-urbanist-semibold underline"
+                  className="text-primary font-urbanist-medium underline"
                   onPress={async () => {
                     try {
                       await Haptics.selectionAsync();
                     } catch {}
-                    router.push("/sign-up");
+                    router.push("/forgot-password");
                   }}
                 >
-                  Sign Up
+                  Forgot password?
                 </Text>
-              </Text>
+              </View>
+            </View>
+
+            {/* Actions */}
+            <View className="px-6 mt-8 pb-8">
+              <PrimaryButton
+                title="Sign In"
+                onPress={onSubmit}
+                className="w-full"
+                withHaptics
+                hapticStyle="medium"
+                disabled={loading}
+              />
+              <View className="items-center mt-4">
+                <Text className="text-primary font-urbanist-medium">
+                  Don&apos;t have an account?{" "}
+                  <Text
+                    className="font-urbanist-semibold underline"
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      router.push("/sign-up");
+                    }}
+                  >
+                    Sign Up
+                  </Text>
+                </Text>
+              </View>
             </View>
           </Animated.View>
         </ScrollView>

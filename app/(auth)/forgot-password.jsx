@@ -8,7 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from "react-native-reanimated";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -65,8 +69,8 @@ export default function ForgotPassword() {
     <View className="flex-1 bg-background">
       {/* Fixed Header: Brand + Back */}
       <Animated.View
-        entering={FadeInDown.duration(500).springify()}
-        className="px-6 pt-8 pb-4"
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-8 pb-4 border-b border-primary/10"
       >
         <View className="flex-row items-center">
           <TouchableOpacity
@@ -100,71 +104,66 @@ export default function ForgotPassword() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}
         >
-          {/* Header */}
-          <View className="px-6 mt-4">
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(100).springify()}
-              className="text-primary font-urbanist-bold text-3xl"
-            >
-              Forgot password
-            </Animated.Text>
-            <Animated.Text
-              entering={FadeInDown.duration(550).delay(150).springify()}
-              className="text-primary opacity-80 font-urbanist-medium mt-2"
-            >
-              Enter your email and we will send a 6-digit code to verify your
-              identity.
-            </Animated.Text>
-          </View>
-
-          {/* Form */}
+          {/* Grouped Content Animation */}
           <Animated.View
-            entering={FadeInUp.duration(600).delay(250).springify()}
-            className="px-6 mt-8 gap-4"
+            entering={FadeInUp.duration(400)
+              .delay(100)
+              .easing(Easing.out(Easing.cubic))}
           >
-            <FormInput
-              label="Email"
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={(t) => {
-                const v = t.replace(/\s+/g, "");
-                setEmail(v);
-              }}
-              keyboardType="email-address"
-              autoComplete="email"
-              returnKeyType="done"
-              onSubmitEditing={onSubmit}
-            />
-          </Animated.View>
-
-          {/* Actions */}
-          <Animated.View
-            entering={FadeInUp.duration(650).delay(350).springify()}
-            className="px-6 mt-8 pb-8"
-          >
-            <PrimaryButton
-              title="Send code"
-              onPress={onSubmit}
-              className="w-full"
-              withHaptics
-              hapticStyle="medium"
-              disabled={loading}
-            />
-            <View className="items-center mt-4">
-              <Text className="text-primary font-urbanist-medium">
-                Remembered your password?{" "}
-                <Text
-                  className="font-urbanist-semibold underline"
-                  onPress={async () => {
-                    try {
-                      await Haptics.selectionAsync();
-                    } catch {}
-                    router.push("/sign-in");
-                  }}
-                >
-                  Sign In
-                </Text>
+            {/* Header */}
+            <View className="px-6 mt-4">
+              <Text className="text-primary font-urbanist-bold text-3xl">
+                Forgot password
               </Text>
+              <Text className="text-primary opacity-80 font-urbanist-medium mt-2">
+                Enter your email and we will send a 6-digit code to verify your
+                identity.
+              </Text>
+            </View>
+
+            {/* Form */}
+            <View className="px-6 mt-8 gap-4">
+              <FormInput
+                label="Email"
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={(t) => {
+                  const v = t.replace(/\s+/g, "");
+                  setEmail(v);
+                }}
+                keyboardType="email-address"
+                autoComplete="email"
+                returnKeyType="done"
+                onSubmitEditing={onSubmit}
+              />
+            </View>
+
+            {/* Actions */}
+            <View className="px-6 mt-8 pb-8">
+              <PrimaryButton
+                title="Send code"
+                onPress={onSubmit}
+                className="w-full"
+                withHaptics
+                hapticStyle="medium"
+                disabled={loading}
+              />
+              <View className="items-center mt-4">
+                <Text className="text-primary font-urbanist-medium">
+                  Remembered your password?{" "}
+                  <Text
+                    className="font-urbanist-semibold underline"
+                    onPress={async () => {
+                      try {
+                        await Haptics.selectionAsync();
+                      } catch {}
+                      router.push("/sign-in");
+                    }}
+                  >
+                    Sign In
+                  </Text>
+                </Text>
+              </View>
             </View>
           </Animated.View>
         </ScrollView>
