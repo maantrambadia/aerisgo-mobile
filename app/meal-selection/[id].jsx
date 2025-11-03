@@ -7,7 +7,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -166,7 +170,10 @@ export default function MealSelection() {
   return (
     <View className="flex-1 bg-background">
       {/* Header */}
-      <Animated.View entering={FadeInDown.duration(400)} className="px-6 pt-6">
+      <Animated.View
+        entering={FadeInDown.duration(500).easing(Easing.out(Easing.cubic))}
+        className="px-6 pt-6 pb-4"
+      >
         <View className="flex-row items-center justify-between mb-4">
           <TouchableOpacity
             onPress={() => {
@@ -201,125 +208,130 @@ export default function MealSelection() {
         </View>
       </Animated.View>
 
-      <ScrollView
+      <View className="h-px bg-primary/10" />
+
+      {/* Grouped Content Animation */}
+      <Animated.View
+        entering={FadeInUp.duration(400)
+          .delay(100)
+          .easing(Easing.out(Easing.cubic))}
         className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
-        {/* Meal Selection for Each Passenger */}
-        {passengers.map((passenger, passengerIndex) => (
-          <Animated.View
-            key={passenger.seatNumber}
-            entering={FadeInUp.duration(600).delay(100 + passengerIndex * 50)}
-            className="mx-6 mt-4 bg-secondary/40 rounded-[24px] p-5 border border-primary/10"
-          >
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-base font-urbanist-bold text-primary">
-                {passenger.fullName || `Passenger ${passengerIndex + 1}`}
-              </Text>
-              <View className="bg-primary/10 rounded-lg px-3 py-1">
-                <Text className="text-xs font-urbanist-semibold text-primary">
-                  Seat {passenger.seatNumber}
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        >
+          {/* Meal Selection for Each Passenger */}
+          {passengers.map((passenger, passengerIndex) => (
+            <View
+              key={passenger.seatNumber}
+              className="mx-6 mt-4 bg-secondary/40 rounded-[24px] p-5 border border-primary/10"
+            >
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-base font-urbanist-bold text-primary">
+                  {passenger.fullName || `Passenger ${passengerIndex + 1}`}
                 </Text>
+                <View className="bg-primary/10 rounded-lg px-3 py-1">
+                  <Text className="text-xs font-urbanist-semibold text-primary">
+                    Seat {passenger.seatNumber}
+                  </Text>
+                </View>
               </View>
-            </View>
 
-            {/* Meal Options */}
-            <View className="gap-3">
-              {meals.map((meal, mealIndex) => {
-                const isSelected =
-                  selectedMeals[passenger.seatNumber] === meal.id;
+              {/* Meal Options */}
+              <View className="gap-3">
+                {meals.map((meal, mealIndex) => {
+                  const isSelected =
+                    selectedMeals[passenger.seatNumber] === meal.id;
 
-                return (
-                  <TouchableOpacity
-                    key={meal.id}
-                    onPress={() => selectMeal(passenger.seatNumber, meal.id)}
-                    className={`rounded-2xl p-4 border-2 ${
-                      isSelected
-                        ? "bg-primary/5 border-primary"
-                        : "bg-secondary/20 border-primary/10"
-                    }`}
-                  >
-                    <View className="flex-row items-start">
-                      <View className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center mr-3">
-                        <Text className="text-2xl">
-                          {categoryIcons[meal.category] || "🍽️"}
-                        </Text>
-                      </View>
-
-                      <View className="flex-1">
-                        <Text className="text-sm font-urbanist-bold text-primary">
-                          {meal.name}
-                        </Text>
-                        <Text className="text-xs font-urbanist-medium text-primary/60 mt-1">
-                          {meal.description}
-                        </Text>
-                        {meal.price > 0 && (
-                          <Text className="text-xs font-urbanist-semibold text-primary mt-1">
-                            ₹{meal.price}
+                  return (
+                    <TouchableOpacity
+                      key={meal.id}
+                      onPress={() => selectMeal(passenger.seatNumber, meal.id)}
+                      className={`rounded-2xl p-4 border ${
+                        isSelected
+                          ? "bg-primary/5 border-primary"
+                          : "bg-secondary/20 border-primary/5"
+                      }`}
+                    >
+                      <View className="flex-row items-start">
+                        <View className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center mr-3">
+                          <Text className="text-2xl">
+                            {categoryIcons[meal.category] || "🍽️"}
                           </Text>
+                        </View>
+
+                        <View className="flex-1">
+                          <Text className="text-sm font-urbanist-bold text-primary">
+                            {meal.name}
+                          </Text>
+                          <Text className="text-xs font-urbanist-medium text-primary/60 mt-1">
+                            {meal.description}
+                          </Text>
+                          {meal.price > 0 && (
+                            <Text className="text-xs font-urbanist-semibold text-primary mt-1">
+                              ₹{meal.price}
+                            </Text>
+                          )}
+                        </View>
+
+                        {isSelected ? (
+                          <View className="w-6 h-6 rounded-full bg-primary items-center justify-center ml-2">
+                            <Ionicons name="checkmark" size={16} color="#fff" />
+                          </View>
+                        ) : (
+                          <View className="w-6 h-6 rounded-full border-2 border-primary/20 ml-2" />
                         )}
                       </View>
-
-                      {isSelected ? (
-                        <View className="w-6 h-6 rounded-full bg-primary items-center justify-center ml-2">
-                          <Ionicons name="checkmark" size={16} color="#fff" />
-                        </View>
-                      ) : (
-                        <View className="w-6 h-6 rounded-full border-2 border-primary/20 ml-2" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </Animated.View>
-        ))}
+          ))}
 
-        {/* Info Note */}
-        <Animated.View
-          entering={FadeInUp.duration(600).delay(200 + passengers.length * 50)}
-          className="mx-6 mt-6"
-        >
-          <Text className="text-xs font-urbanist-medium text-primary/60 text-center">
-            💡 You can change your meal preference anytime before check-in
-          </Text>
-        </Animated.View>
-      </ScrollView>
-
-      {/* Action Buttons */}
-      <Animated.View
-        entering={FadeInUp.duration(400).delay(300)}
-        className="absolute bottom-0 left-0 right-0 bg-background border-t border-primary/10 px-6 py-4"
-        style={{ paddingBottom: insets.bottom + 16 }}
-      >
-        <View className="flex-row gap-3">
-          <TouchableOpacity
-            onPress={handleSkip}
-            disabled={saving}
-            className="flex-1 bg-secondary/40 rounded-2xl py-4 items-center justify-center border border-primary/10"
-          >
-            <Text className="text-sm font-urbanist-bold text-primary">
-              Skip for Now
+          {/* Info Note */}
+          <View className="mx-6 mt-6">
+            <Text className="text-xs font-urbanist-medium text-primary/60 text-center">
+              💡 You can change your meal preference anytime before check-in
             </Text>
-          </TouchableOpacity>
+          </View>
+        </ScrollView>
 
-          <TouchableOpacity
-            onPress={handleContinue}
-            disabled={saving}
-            className="flex-1 bg-primary rounded-2xl py-4 items-center justify-center flex-row"
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Text className="text-sm font-urbanist-bold text-white mr-2">
-                  Save & Continue
-                </Text>
-                <Ionicons name="chevron-forward" size={18} color="#fff" />
-              </>
-            )}
-          </TouchableOpacity>
+        {/* Action Buttons */}
+        <View
+          className="absolute bottom-0 left-0 right-0 bg-background border-t border-primary/10 px-6 py-4"
+          style={{ paddingBottom: insets.bottom + 16 }}
+        >
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              onPress={handleSkip}
+              disabled={saving}
+              className="flex-1 bg-secondary/40 rounded-full py-4 items-center justify-center border border-primary/10"
+            >
+              <Text className="text-sm font-urbanist-bold text-primary">
+                Skip for Now
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleContinue}
+              disabled={saving}
+              className="flex-1 bg-primary rounded-full py-4 items-center justify-center flex-row"
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Text className="text-sm font-urbanist-bold text-secondary mr-2">
+                    Save & Continue
+                  </Text>
+                  <Ionicons name="chevron-forward" size={18} color="#fff" />
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
     </View>
