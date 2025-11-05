@@ -320,7 +320,7 @@ export default function RewardsScreen() {
               tint="light"
               className="rounded-[28px] overflow-hidden border border-primary/10"
             >
-              <View className="p-4 flex-row items-center justify-between">
+              <View className="p-4 flex-row items-center justify-between bg-secondary">
                 <View className="flex-row items-center gap-3 flex-1">
                   <View
                     className="h-12 w-12 rounded-full items-center justify-center"
