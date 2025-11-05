@@ -159,6 +159,28 @@ export default function PassengerDetails() {
     }
   }
 
+  // Name formatting helper (only letters and spaces, capitalize first letter of each word)
+  const formatNameLive = (raw) => {
+    const src = String(raw || "");
+    const onlyLetters = src.replace(/[^a-zA-Z\s]/g, "");
+    const hadTrailing = /\s$/.test(onlyLetters);
+    const collapsed = onlyLetters.replace(/\s{2,}/g, " ");
+    const parts = collapsed.split(" ");
+    const titleCased = parts
+      .map((w) =>
+        w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ""
+      )
+      .join(" ");
+    // Avoid double trailing spaces
+    return hadTrailing && !titleCased.endsWith(" ")
+      ? `${titleCased} `
+      : titleCased;
+  };
+
+  // Document validation functions
+  const isValidAadhar = (v) => /^\d{12}$/.test(v);
+  const isValidPassport = (v) => /^[A-Z][0-9]{7}$/.test(v);
+
   function handlePassengerChange(index, field, value) {
     setPassengers((prev) =>
       prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
@@ -200,6 +222,21 @@ export default function PassengerDetails() {
         toast.error({
           title: "Missing Information",
           message: `Please enter document number for passenger ${i + 1}`,
+        });
+        return false;
+      }
+      // Validate document number format
+      if (p.documentType === "aadhar" && !isValidAadhar(p.documentNumber)) {
+        toast.error({
+          title: "Invalid Aadhar",
+          message: `Aadhar must be 12 digits for passenger ${i + 1}`,
+        });
+        return false;
+      }
+      if (p.documentType === "passport" && !isValidPassport(p.documentNumber)) {
+        toast.error({
+          title: "Invalid Passport",
+          message: `Passport format: 1 letter + 7 digits (e.g., A1234567) for passenger ${i + 1}`,
         });
         return false;
       }
@@ -431,9 +468,11 @@ export default function PassengerDetails() {
                       label=""
                       placeholder="As per ID proof"
                       value={passenger.fullName}
-                      onChangeText={(value) =>
-                        handlePassengerChange(index, "fullName", value)
-                      }
+                      onChangeText={(value) => {
+                        const formatted = formatNameLive(value);
+                        handlePassengerChange(index, "fullName", formatted);
+                      }}
+                      autoCapitalize="words"
                     />
                   )}
                   {passenger.isPrimary && (
@@ -572,14 +611,48 @@ export default function PassengerDetails() {
                   <FormInput
                     label="Document Number *"
                     value={passenger.documentNumber}
-                    onChangeText={(value) =>
-                      handlePassengerChange(
-                        index,
-                        "documentNumber",
-                        value.toUpperCase()
-                      )
+                    onChangeText={(value) => {
+                      let formatted = "";
+                      if (passenger.documentType === "aadhar") {
+                        // Aadhar: Only digits, max 12
+                        formatted = value.replace(/\D/g, "").slice(0, 12);
+                      } else if (passenger.documentType === "passport") {
+                        // Passport: 1 uppercase letter + 7 digits (e.g., A1234567)
+                        const upper = value.toUpperCase();
+                        if (upper.length === 0) {
+                          formatted = "";
+                        } else if (upper.length === 1) {
+                          // First character must be a letter
+                          formatted = upper.replace(/[^A-Z]/g, "");
+                        } else {
+                          // First char is letter, rest are digits
+                          const firstChar = upper
+                            .charAt(0)
+                            .replace(/[^A-Z]/g, "");
+                          const restDigits = upper
+                            .slice(1)
+                            .replace(/\D/g, "")
+                            .slice(0, 7);
+                          formatted = firstChar + restDigits;
+                        }
+                      } else {
+                        // No document type selected yet
+                        formatted = value.toUpperCase().slice(0, 20);
+                      }
+                      handlePassengerChange(index, "documentNumber", formatted);
+                    }}
+                    placeholder={
+                      passenger.documentType === "aadhar"
+                        ? "123456789012"
+                        : passenger.documentType === "passport"
+                          ? "A1234567"
+                          : "Enter document number"
                     }
-                    placeholder="Enter document number"
+                    keyboardType={
+                      passenger.documentType === "aadhar"
+                        ? "number-pad"
+                        : "default"
+                    }
                     autoCapitalize="characters"
                     maxLength={
                       passenger.documentType === "aadhar"
@@ -617,15 +690,15 @@ export default function PassengerDetails() {
                     <FormInput
                       label="Phone (Optional)"
                       value={passenger.phone}
-                      onChangeText={(value) =>
-                        handlePassengerChange(
-                          index,
-                          "phone",
-                          value.replace(/[^0-9]/g, "")
-                        )
-                      }
-                      placeholder="10-digit mobile number"
+                      onChangeText={(value) => {
+                        const digits = (value || "")
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        handlePassengerChange(index, "phone", digits);
+                      }}
+                      placeholder="9000000000"
                       keyboardType="phone-pad"
+                      prefix="+91"
                       maxLength={10}
                     />
                   </View>
