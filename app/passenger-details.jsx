@@ -308,338 +308,356 @@ export default function PassengerDetails() {
       </Animated.View>
 
       {/* Grouped Content Animation */}
-      <Animated.View
-        entering={FadeInUp.duration(400)
-          .delay(100)
-          .easing(Easing.out(Easing.cubic))}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        {/* Flight Info Card with Border */}
-        <View className="mt-4 pb-4 border-b border-primary/10">
-          <View className="relative mx-6 p-5 bg-primary rounded-[28px] overflow-hidden">
-            <View className="flex-row items-center justify-between mb-3">
-              <RoutePill from={from} to={to} />
-              <View className="items-end">
-                <Text className="text-xs font-urbanist-medium text-text/70">
-                  {new Date(date).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </Text>
-                {isRoundTrip && (
-                  <Text className="text-xs font-urbanist-semibold text-text/90 mt-0.5">
-                    Round Trip
-                  </Text>
-                )}
-              </View>
-            </View>
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-2xl font-urbanist-bold text-text">
-                  {currentFlight.flightNumber}
-                </Text>
-                <Text className="text-sm font-urbanist-medium text-text/70 mt-1">
-                  {formatTime(currentFlight.departureTime)} -{" "}
-                  {formatTime(currentFlight.arrivalTime)}
-                </Text>
-              </View>
-              <View className="items-end">
-                <Text className="text-sm font-urbanist-medium text-text/70">
-                  {isRoundTrip
-                    ? "Passengers"
-                    : `${currentSeats.length} Seat${currentSeats.length > 1 ? "s" : ""}`}
-                </Text>
-                <Text className="text-lg font-urbanist-bold text-text">
-                  {isRoundTrip
-                    ? `${currentSeats.length} Pax`
-                    : currentSeats.map((s) => s.seatNumber).join(", ")}
-                </Text>
-              </View>
-            </View>
-            {/* Ticket notches */}
-            <Notch side="left" />
-            <Notch side="right" />
-          </View>
-        </View>
-
-        <ScrollView
-          className="flex-1 bg-background px-6"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <Animated.View
+          entering={FadeInUp.duration(400)
+            .delay(100)
+            .easing(Easing.out(Easing.cubic))}
+          className="flex-1"
         >
-          {/* Passenger Forms */}
-          {passengers.map((passenger, index) => (
-            <View
-              key={index}
-              className="mt-4 p-5 bg-secondary/40 rounded-3xl border border-primary/10"
-            >
-              <View className="flex-row items-center gap-3 mb-4">
-                <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
-                  <Ionicons name="person" size={20} color="#541424" />
-                </View>
-                <View className="flex-1">
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-lg font-urbanist-bold text-primary">
-                      Passenger {index + 1}
+          {/* Flight Info Card with Border */}
+          <View className="mt-4 pb-4 border-b border-primary/10">
+            <View className="relative mx-6 p-5 bg-primary rounded-[28px] overflow-hidden">
+              <View className="flex-row items-center justify-between mb-3">
+                <RoutePill from={from} to={to} />
+                <View className="items-end">
+                  <Text className="text-xs font-urbanist-medium text-text/70">
+                    {new Date(date).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </Text>
+                  {isRoundTrip && (
+                    <Text className="text-xs font-urbanist-semibold text-text/90 mt-0.5">
+                      Round Trip
                     </Text>
-                    {passenger.isPrimary && (
-                      <View className="px-2 py-1 rounded-full bg-primary/10">
-                        <Text className="text-xs font-urbanist-semibold text-primary">
-                          You
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text className="text-sm font-urbanist-medium text-primary/60">
-                    Seat {passenger.seatNumber}
+                  )}
+                </View>
+              </View>
+              <View className="flex-row items-center justify-between">
+                <View>
+                  <Text className="text-2xl font-urbanist-bold text-text">
+                    {currentFlight.flightNumber}
+                  </Text>
+                  <Text className="text-sm font-urbanist-medium text-text/70 mt-1">
+                    {formatTime(currentFlight.departureTime)} -{" "}
+                    {formatTime(currentFlight.arrivalTime)}
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text className="text-sm font-urbanist-medium text-text/70">
+                    {isRoundTrip
+                      ? "Passengers"
+                      : `${currentSeats.length} Seat${currentSeats.length > 1 ? "s" : ""}`}
+                  </Text>
+                  <Text className="text-lg font-urbanist-bold text-text">
+                    {isRoundTrip
+                      ? `${currentSeats.length} Pax`
+                      : currentSeats.map((s) => s.seatNumber).join(", ")}
                   </Text>
                 </View>
               </View>
+              {/* Ticket notches */}
+              <Notch side="left" />
+              <Notch side="right" />
+            </View>
+          </View>
 
-              {/* Full Name */}
-              <View className="mb-4">
-                <Text className="text-sm font-urbanist-semibold text-primary mb-2">
-                  Full Name <Text className="text-red-500">*</Text>
-                </Text>
-                {passenger.isPrimary ? (
-                  <View className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center">
+          <ScrollView
+            className="flex-1 bg-background px-6"
+            contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Passenger Forms */}
+            {passengers.map((passenger, index) => (
+              <View
+                key={index}
+                className="mt-4 p-5 bg-secondary/40 rounded-3xl border border-primary/10"
+              >
+                <View className="flex-row items-center gap-3 mb-4">
+                  <View className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center">
+                    <Ionicons name="person" size={20} color="#541424" />
+                  </View>
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-lg font-urbanist-bold text-primary">
+                        Passenger {index + 1}
+                      </Text>
+                      {passenger.isPrimary && (
+                        <View className="px-2 py-1 rounded-full bg-primary/10">
+                          <Text className="text-xs font-urbanist-semibold text-primary">
+                            You
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text className="text-sm font-urbanist-medium text-primary/60">
+                      Seat {passenger.seatNumber}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Full Name */}
+                <View className="mb-4">
+                  <Text className="text-sm font-urbanist-semibold text-primary mb-2">
+                    Full Name <Text className="text-red-500">*</Text>
+                  </Text>
+                  {passenger.isPrimary ? (
+                    <View className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center">
+                      <Ionicons
+                        name="person-outline"
+                        size={20}
+                        color="#541424"
+                        style={{ marginRight: 12 }}
+                      />
+                      <Text
+                        className={`font-urbanist-medium flex-1 ${
+                          passenger.fullName
+                            ? "text-primary"
+                            : "text-primary/40"
+                        }`}
+                      >
+                        {passenger.fullName || "As per ID proof"}
+                      </Text>
+                    </View>
+                  ) : (
+                    <FormInput
+                      label=""
+                      placeholder="As per ID proof"
+                      value={passenger.fullName}
+                      onChangeText={(value) =>
+                        handlePassengerChange(index, "fullName", value)
+                      }
+                    />
+                  )}
+                  {passenger.isPrimary && (
+                    <Text className="text-xs font-urbanist text-primary/50 mt-1 ml-1">
+                      Pre-filled from profile
+                    </Text>
+                  )}
+                </View>
+
+                {/* Date of Birth */}
+                <View className="mb-4">
+                  <Text className="text-sm font-urbanist-semibold text-primary mb-2">
+                    Date of Birth <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowDatePicker(index);
+                    }}
+                    className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center"
+                  >
                     <Ionicons
-                      name="person-outline"
+                      name="calendar-outline"
                       size={20}
                       color="#541424"
                       style={{ marginRight: 12 }}
                     />
                     <Text
                       className={`font-urbanist-medium flex-1 ${
-                        passenger.fullName ? "text-primary" : "text-primary/40"
+                        passenger.dateOfBirth
+                          ? "text-primary"
+                          : "text-primary/40"
                       }`}
                     >
-                      {passenger.fullName || "As per ID proof"}
+                      {passenger.dateOfBirth
+                        ? new Date(passenger.dateOfBirth).toLocaleDateString(
+                            "en-IN",
+                            { day: "2-digit", month: "short", year: "numeric" }
+                          )
+                        : "Select date of birth"}
                     </Text>
-                  </View>
-                ) : (
-                  <FormInput
-                    label=""
-                    placeholder="As per ID proof"
-                    value={passenger.fullName}
-                    onChangeText={(value) =>
-                      handlePassengerChange(index, "fullName", value)
-                    }
-                  />
-                )}
-                {passenger.isPrimary && (
-                  <Text className="text-xs font-urbanist text-primary/50 mt-1 ml-1">
-                    Pre-filled from profile
-                  </Text>
-                )}
-              </View>
-
-              {/* Date of Birth */}
-              <View className="mb-4">
-                <Text className="text-sm font-urbanist-semibold text-primary mb-2">
-                  Date of Birth <Text className="text-red-500">*</Text>
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setShowDatePicker(index);
-                  }}
-                  className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center"
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={20}
-                    color="#541424"
-                    style={{ marginRight: 12 }}
-                  />
-                  <Text
-                    className={`font-urbanist-medium flex-1 ${
-                      passenger.dateOfBirth ? "text-primary" : "text-primary/40"
-                    }`}
-                  >
-                    {passenger.dateOfBirth
-                      ? new Date(passenger.dateOfBirth).toLocaleDateString(
-                          "en-IN",
-                          { day: "2-digit", month: "short", year: "numeric" }
-                        )
-                      : "Select date of birth"}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#54142460" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Gender */}
-              <View className="mb-4">
-                <Text className="text-sm font-urbanist-semibold text-primary mb-2">
-                  Gender <Text className="text-red-500">*</Text>
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!passenger.isPrimary) {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowGenderPicker(index);
-                    }
-                  }}
-                  disabled={passenger.isPrimary}
-                  className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center"
-                >
-                  <Ionicons
-                    name={
-                      passenger.gender === "male"
-                        ? "male"
-                        : passenger.gender === "female"
-                          ? "female"
-                          : "male-female"
-                    }
-                    size={20}
-                    color="#541424"
-                    style={{ marginRight: 12 }}
-                  />
-                  <Text
-                    className={`font-urbanist-medium flex-1 capitalize ${
-                      passenger.gender ? "text-primary" : "text-primary/40"
-                    }`}
-                  >
-                    {passenger.gender || "Select gender"}
-                  </Text>
-                  {!passenger.isPrimary && (
                     <Ionicons name="chevron-down" size={20} color="#54142460" />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* Document Type */}
-              <View className="mb-4">
-                <Text className="text-sm font-urbanist-semibold text-primary mb-2">
-                  Document Type <Text className="text-red-500">*</Text>
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!passenger.isPrimary || !passenger.documentType) {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowDocTypePicker(index);
-                    }
-                  }}
-                  disabled={passenger.isPrimary && !!passenger.documentType}
-                  className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center"
-                >
-                  <Ionicons
-                    name="card-outline"
-                    size={20}
-                    color="#541424"
-                    style={{ marginRight: 12 }}
-                  />
-                  <Text
-                    className={`font-urbanist-medium flex-1 capitalize ${
-                      passenger.documentType
-                        ? "text-primary"
-                        : "text-primary/40"
-                    }`}
-                  >
-                    {passenger.documentType === "aadhar"
-                      ? "Aadhar Card"
-                      : passenger.documentType === "passport"
-                        ? "Passport"
-                        : "Select document type"}
-                  </Text>
-                  {(!passenger.isPrimary || !passenger.documentType) && (
-                    <Ionicons name="chevron-down" size={20} color="#54142460" />
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              {/* Document Number */}
-              <View className="mb-4">
-                <FormInput
-                  label="Document Number *"
-                  value={passenger.documentNumber}
-                  onChangeText={(value) =>
-                    handlePassengerChange(
-                      index,
-                      "documentNumber",
-                      value.toUpperCase()
-                    )
-                  }
-                  placeholder="Enter document number"
-                  autoCapitalize="characters"
-                  maxLength={
-                    passenger.documentType === "aadhar"
-                      ? 12
-                      : passenger.documentType === "passport"
-                        ? 8
-                        : 20
-                  }
-                />
-                {passenger.isPrimary && passenger.documentNumber && (
-                  <Text className="text-xs font-urbanist text-primary/50 mt-1 ml-1">
-                    Pre-filled from profile
-                  </Text>
-                )}
-              </View>
-
-              {/* Email (Optional for non-primary) */}
-              {!passenger.isPrimary && (
-                <View className="mb-4">
-                  <FormInput
-                    label="Email (Optional)"
-                    value={passenger.email}
-                    onChangeText={(value) =>
-                      handlePassengerChange(index, "email", value)
-                    }
-                    placeholder="email@example.com"
-                    keyboardType="email-address"
-                  />
+                  </TouchableOpacity>
                 </View>
-              )}
 
-              {/* Phone (Optional for non-primary) */}
-              {!passenger.isPrimary && (
+                {/* Gender */}
+                <View className="mb-4">
+                  <Text className="text-sm font-urbanist-semibold text-primary mb-2">
+                    Gender <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!passenger.isPrimary) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setShowGenderPicker(index);
+                      }
+                    }}
+                    disabled={passenger.isPrimary}
+                    className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center"
+                  >
+                    <Ionicons
+                      name={
+                        passenger.gender === "male"
+                          ? "male"
+                          : passenger.gender === "female"
+                            ? "female"
+                            : "male-female"
+                      }
+                      size={20}
+                      color="#541424"
+                      style={{ marginRight: 12 }}
+                    />
+                    <Text
+                      className={`font-urbanist-medium flex-1 capitalize ${
+                        passenger.gender ? "text-primary" : "text-primary/40"
+                      }`}
+                    >
+                      {passenger.gender || "Select gender"}
+                    </Text>
+                    {!passenger.isPrimary && (
+                      <Ionicons
+                        name="chevron-down"
+                        size={20}
+                        color="#54142460"
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Document Type */}
+                <View className="mb-4">
+                  <Text className="text-sm font-urbanist-semibold text-primary mb-2">
+                    Document Type <Text className="text-red-500">*</Text>
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (!passenger.isPrimary || !passenger.documentType) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setShowDocTypePicker(index);
+                      }
+                    }}
+                    disabled={passenger.isPrimary && !!passenger.documentType}
+                    className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center"
+                  >
+                    <Ionicons
+                      name="card-outline"
+                      size={20}
+                      color="#541424"
+                      style={{ marginRight: 12 }}
+                    />
+                    <Text
+                      className={`font-urbanist-medium flex-1 capitalize ${
+                        passenger.documentType
+                          ? "text-primary"
+                          : "text-primary/40"
+                      }`}
+                    >
+                      {passenger.documentType === "aadhar"
+                        ? "Aadhar Card"
+                        : passenger.documentType === "passport"
+                          ? "Passport"
+                          : "Select document type"}
+                    </Text>
+                    {(!passenger.isPrimary || !passenger.documentType) && (
+                      <Ionicons
+                        name="chevron-down"
+                        size={20}
+                        color="#54142460"
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Document Number */}
                 <View className="mb-4">
                   <FormInput
-                    label="Phone (Optional)"
-                    value={passenger.phone}
+                    label="Document Number *"
+                    value={passenger.documentNumber}
                     onChangeText={(value) =>
                       handlePassengerChange(
                         index,
-                        "phone",
-                        value.replace(/[^0-9]/g, "")
+                        "documentNumber",
+                        value.toUpperCase()
                       )
                     }
-                    placeholder="10-digit mobile number"
-                    keyboardType="phone-pad"
-                    maxLength={10}
+                    placeholder="Enter document number"
+                    autoCapitalize="characters"
+                    maxLength={
+                      passenger.documentType === "aadhar"
+                        ? 12
+                        : passenger.documentType === "passport"
+                          ? 8
+                          : 20
+                    }
                   />
+                  {passenger.isPrimary && passenger.documentNumber && (
+                    <Text className="text-xs font-urbanist text-primary/50 mt-1 ml-1">
+                      Pre-filled from profile
+                    </Text>
+                  )}
                 </View>
-              )}
 
-              {passenger.isPrimary && (
-                <View className="p-3 bg-primary/5 rounded-2xl flex-row gap-2 items-start">
-                  <Ionicons
-                    name="information-circle"
-                    size={18}
-                    color="#541424"
-                    style={{ marginTop: 1 }}
-                  />
-                  <Text className="flex-1 text-xs font-urbanist-medium text-primary/70">
-                    Your details have been pre-filled from your profile.
-                  </Text>
-                </View>
-              )}
+                {/* Email (Optional for non-primary) */}
+                {!passenger.isPrimary && (
+                  <View className="mb-4">
+                    <FormInput
+                      label="Email (Optional)"
+                      value={passenger.email}
+                      onChangeText={(value) =>
+                        handlePassengerChange(index, "email", value)
+                      }
+                      placeholder="email@example.com"
+                      keyboardType="email-address"
+                    />
+                  </View>
+                )}
+
+                {/* Phone (Optional for non-primary) */}
+                {!passenger.isPrimary && (
+                  <View className="mb-4">
+                    <FormInput
+                      label="Phone (Optional)"
+                      value={passenger.phone}
+                      onChangeText={(value) =>
+                        handlePassengerChange(
+                          index,
+                          "phone",
+                          value.replace(/[^0-9]/g, "")
+                        )
+                      }
+                      placeholder="10-digit mobile number"
+                      keyboardType="phone-pad"
+                      maxLength={10}
+                    />
+                  </View>
+                )}
+
+                {passenger.isPrimary && (
+                  <View className="p-3 bg-primary/5 rounded-2xl flex-row gap-2 items-start">
+                    <Ionicons
+                      name="information-circle"
+                      size={18}
+                      color="#541424"
+                      style={{ marginTop: 1 }}
+                    />
+                    <Text className="flex-1 text-xs font-urbanist-medium text-primary/70">
+                      Your details have been pre-filled from your profile.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+
+            {/* Bottom Button */}
+            <View className="mt-6 mb-0">
+              <PrimaryButton
+                title="Continue to Payment"
+                onPress={handleContinue}
+                leftIconName="card"
+              />
             </View>
-          ))}
-
-          {/* Bottom Button */}
-          <View className="mt-6 mb-0">
-            <PrimaryButton
-              title="Continue to Payment"
-              onPress={handleContinue}
-              leftIconName="card"
-            />
-          </View>
-        </ScrollView>
-      </Animated.View>
+          </ScrollView>
+        </Animated.View>
+      </KeyboardAvoidingView>
 
       {/* Date Picker Modal */}
       <BottomSheetModal
