@@ -519,6 +519,7 @@ export default function SeatSelection() {
           date,
           returnDate,
           tripType: "roundtrip",
+          totalPrice: totalPrice.toString(), // Pass dynamic price
         },
       });
     } else {
@@ -531,6 +532,7 @@ export default function SeatSelection() {
           to,
           date,
           tripType: "oneway",
+          totalPrice: totalPrice.toString(), // Pass dynamic price
         },
       });
     }

@@ -163,8 +163,18 @@ export default function BookingConfirmation() {
     }
   }, [params.passengers]);
 
-  const { from, to, date, tripType = "oneway", returnDate } = params;
+  const {
+    from,
+    to,
+    date,
+    tripType = "oneway",
+    returnDate,
+    totalPrice,
+  } = params;
   const isRoundTrip = tripType === "roundtrip";
+
+  // Parse dynamic price from seat selection
+  const dynamicTotalPrice = totalPrice ? parseFloat(totalPrice) : null;
 
   // Use correct flight and seats based on trip type
   const currentFlight = isRoundTrip ? outboundFlight : flight;
@@ -193,6 +203,27 @@ export default function BookingConfirmation() {
   }
 
   const pricing = useMemo(() => {
+    // If dynamic price is available from seat selection, use it
+    if (dynamicTotalPrice) {
+      // Calculate breakdown from dynamic total
+      const subtotal = dynamicTotalPrice / 1.08; // Remove 8% taxes (5% GST + 3% fuel)
+      const gst = subtotal * 0.05;
+      const fuelSurcharge = subtotal * 0.03;
+      const airportFee = 150 * allSeats.length; // ₹150 per seat
+      const actualSubtotal =
+        dynamicTotalPrice - gst - fuelSurcharge - airportFee;
+
+      return {
+        subtotal: Math.round(actualSubtotal * 100) / 100,
+        extraLegroomTotal: 0, // Included in subtotal
+        gst: Math.round(gst * 100) / 100,
+        fuelSurcharge: Math.round(fuelSurcharge * 100) / 100,
+        airportFee: Math.round(airportFee * 100) / 100,
+        total: Math.round(dynamicTotalPrice * 100) / 100,
+        breakdown: [],
+      };
+    }
+
     // For round-trip, calculate total for both flights
     const outboundBaseFare = Number(
       (isRoundTrip ? outboundFlight : flight).baseFare || 0
@@ -305,6 +336,8 @@ export default function BookingConfirmation() {
       breakdown,
     };
   }, [
+    dynamicTotalPrice,
+    allSeats.length,
     isRoundTrip,
     outboundFlight.baseFare,
     returnFlight.baseFare,

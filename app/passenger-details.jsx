@@ -80,7 +80,14 @@ export default function PassengerDetails() {
     ? JSON.parse(params.outboundSeats)
     : [];
   const returnSeats = params.returnSeats ? JSON.parse(params.returnSeats) : [];
-  const { from, to, date, tripType = "oneway", returnDate } = params;
+  const {
+    from,
+    to,
+    date,
+    tripType = "oneway",
+    returnDate,
+    totalPrice,
+  } = params;
   const isRoundTrip = tripType === "roundtrip";
 
   // Use correct flight and seats based on trip type
@@ -264,6 +271,7 @@ export default function PassengerDetails() {
           date,
           returnDate,
           tripType: "roundtrip",
+          totalPrice, // Pass dynamic price forward
         },
       });
     } else {
@@ -277,6 +285,7 @@ export default function PassengerDetails() {
           to,
           date,
           tripType: "oneway",
+          totalPrice, // Pass dynamic price forward
         },
       });
     }
