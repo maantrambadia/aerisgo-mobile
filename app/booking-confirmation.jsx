@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -105,6 +105,8 @@ export default function BookingConfirmation() {
   const [rewardPointsToUse, setRewardPointsToUse] = useState(0);
   const [pricingConfig, setPricingConfig] = useState(null);
   const [pointsEarned, setPointsEarned] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
+  const timerRef = useRef(null);
 
   const flight = useMemo(() => {
     try {
@@ -170,6 +172,7 @@ export default function BookingConfirmation() {
     tripType = "oneway",
     returnDate,
     totalPrice,
+    lockStartTime,
   } = params;
   const isRoundTrip = tripType === "roundtrip";
 
@@ -184,6 +187,38 @@ export default function BookingConfirmation() {
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  // Countdown timer for seat lock
+  useEffect(() => {
+    if (!lockStartTime) return;
+
+    const startTime = parseInt(lockStartTime);
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, 600 - elapsed);
+      setTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        clearInterval(timerRef.current);
+        toast.error({
+          title: "Time Expired",
+          message: "Your seat selection has expired. Please select again.",
+        });
+        setTimeout(() => {
+          router.replace("/");
+        }, 2000);
+      }
+    };
+
+    updateTimer();
+    timerRef.current = setInterval(updateTimer, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [lockStartTime, router]);
 
   async function fetchInitialData() {
     try {
@@ -368,6 +403,13 @@ export default function BookingConfirmation() {
     Haptics.selectionAsync();
   }
 
+  // Format time remaining
+  const formatTimeRemaining = () => {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
   async function handlePayment() {
     setShowPaymentModal(false);
     setProcessing(true);
@@ -523,6 +565,35 @@ export default function BookingConfirmation() {
           </TouchableOpacity>
         </View>
       </Animated.View>
+
+      {/* Seat Lock Timer */}
+      <View className="px-6 mt-2">
+        <View
+          className={`rounded-2xl p-3 flex-row items-center gap-3 border ${timeRemaining <= 60 ? "bg-red-50 border-red-200" : "bg-yellow-50 border-yellow-200"}`}
+        >
+          <View
+            className={`w-10 h-10 rounded-full items-center justify-center ${timeRemaining <= 60 ? "bg-red-100" : "bg-yellow-100"}`}
+          >
+            <Ionicons
+              name="time-outline"
+              size={20}
+              color={timeRemaining <= 60 ? "#dc2626" : "#ca8a04"}
+            />
+          </View>
+          <View className="flex-1">
+            <Text
+              className={`font-urbanist-bold text-sm ${timeRemaining <= 60 ? "text-red-700" : "text-yellow-700"}`}
+            >
+              Complete booking in {formatTimeRemaining()}
+            </Text>
+            <Text
+              className={`font-urbanist-medium text-xs ${timeRemaining <= 60 ? "text-red-600" : "text-yellow-600"}`}
+            >
+              Your seats will be released after the timer expires
+            </Text>
+          </View>
+        </View>
+      </View>
 
       {/* Grouped Content Animation */}
       <Animated.View

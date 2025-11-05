@@ -162,6 +162,9 @@ export default function SeatSelection() {
   );
   const [lockedSeats, setLockedSeats] = useState(new Map()); // Map<seatNumber, {lockedBy, expiresAt}>
   const userUnlockingRef = useRef(new Set()); // Track seats being unlocked by user
+  const [lockStartTime, setLockStartTime] = useState(null); // Track when first seat was locked
+  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
+  const timerRef = useRef(null);
 
   // Round-trip support
   const [currentStep, setCurrentStep] = useState("outbound"); // "outbound" or "return"
@@ -305,6 +308,46 @@ export default function SeatSelection() {
     }
   }
 
+  // Timer countdown effect
+  useEffect(() => {
+    if (!lockStartTime) {
+      // Clear timer if no start time
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    // Calculate and update remaining time
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - lockStartTime) / 1000);
+      const remaining = Math.max(0, 600 - elapsed);
+      setTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        clearInterval(timerRef.current);
+        // Unlock all seats and redirect
+        toast.error({
+          title: "Time Expired",
+          message: "Your seat selection has expired. Please select again.",
+        });
+        setTimeout(() => {
+          router.back();
+        }, 2000);
+      }
+    };
+
+    updateTimer(); // Initial update
+    timerRef.current = setInterval(updateTimer, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [lockStartTime, router]);
+
   // Socket.IO real-time event handlers
   const socketHandlers = useMemo(
     () => ({
@@ -422,9 +465,16 @@ export default function SeatSelection() {
           seatNumber: seat.seatNumber,
           sessionId,
         });
-        setSelectedSeats(
-          selectedSeats.filter((s) => s.seatNumber !== seat.seatNumber)
+        const newSelectedSeats = selectedSeats.filter(
+          (s) => s.seatNumber !== seat.seatNumber
         );
+        setSelectedSeats(newSelectedSeats);
+
+        // Reset timer if all seats are deselected
+        if (newSelectedSeats.length === 0) {
+          setLockStartTime(null);
+          setTimeRemaining(600);
+        }
 
         // Remove from tracking after a short delay
         setTimeout(() => {
@@ -460,7 +510,13 @@ export default function SeatSelection() {
           sessionId,
           previousSeat,
         });
-        setSelectedSeats([...selectedSeats, seat]);
+        const newSelectedSeats = [...selectedSeats, seat];
+        setSelectedSeats(newSelectedSeats);
+
+        // Start timer when first seat is selected
+        if (selectedSeats.length === 0 && !lockStartTime) {
+          setLockStartTime(Date.now());
+        }
       } catch (error) {
         console.error("Failed to lock seat:", error);
         const message =
@@ -473,6 +529,13 @@ export default function SeatSelection() {
       }
     }
   }
+
+  // Format time remaining
+  const formatTimeRemaining = () => {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   function handleContinue() {
     if (selectedSeats.length === 0) {
@@ -520,6 +583,7 @@ export default function SeatSelection() {
           returnDate,
           tripType: "roundtrip",
           totalPrice: totalPrice.toString(), // Pass dynamic price
+          lockStartTime: lockStartTime?.toString(), // Pass timer start time
         },
       });
     } else {
@@ -533,6 +597,7 @@ export default function SeatSelection() {
           date,
           tripType: "oneway",
           totalPrice: totalPrice.toString(), // Pass dynamic price
+          lockStartTime: lockStartTime?.toString(), // Pass timer start time
         },
       });
     }
@@ -1049,6 +1114,45 @@ export default function SeatSelection() {
 
           {/* Total Fare and Button - Inside scrollable content */}
           <View className="px-6 mt-6">
+            {/* Timer Display */}
+            {lockStartTime && (
+              <View
+                className={`rounded-[20px] p-3 mb-3 border flex-row items-center gap-3 ${
+                  timeRemaining <= 60
+                    ? "bg-red-50 border-red-200"
+                    : "bg-yellow-50 border-yellow-200"
+                }`}
+              >
+                <View
+                  className={`w-10 h-10 rounded-full items-center justify-center ${
+                    timeRemaining <= 60 ? "bg-red-100" : "bg-yellow-100"
+                  }`}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={20}
+                    color={timeRemaining <= 60 ? "#dc2626" : "#ca8a04"}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text
+                    className={`font-urbanist-bold text-sm ${
+                      timeRemaining <= 60 ? "text-red-700" : "text-yellow-700"
+                    }`}
+                  >
+                    Complete booking in {formatTimeRemaining()}
+                  </Text>
+                  <Text
+                    className={`font-urbanist-medium text-xs ${
+                      timeRemaining <= 60 ? "text-red-600" : "text-yellow-600"
+                    }`}
+                  >
+                    Seats will be released after timer expires
+                  </Text>
+                </View>
+              </View>
+            )}
+
             <View className="bg-secondary/40 rounded-[20px] p-3 mb-3 border border-primary/10">
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center gap-2">

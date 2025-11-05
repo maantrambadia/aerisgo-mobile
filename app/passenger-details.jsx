@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -87,8 +87,13 @@ export default function PassengerDetails() {
     tripType = "oneway",
     returnDate,
     totalPrice,
+    lockStartTime,
   } = params;
   const isRoundTrip = tripType === "roundtrip";
+
+  // Calculate time remaining from lockStartTime
+  const [timeRemaining, setTimeRemaining] = useState(600);
+  const timerRef = useRef(null);
 
   // Use correct flight and seats based on trip type
   // For round-trip, only ask for passenger details once (for outbound seats)
@@ -129,6 +134,45 @@ export default function PassengerDetails() {
     }
     fetchUserProfile();
   }, []);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (!lockStartTime) return;
+
+    const startTime = parseInt(lockStartTime);
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, 600 - elapsed);
+      setTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        clearInterval(timerRef.current);
+        toast.error({
+          title: "Time Expired",
+          message: "Your seat selection has expired. Please select again.",
+        });
+        setTimeout(() => {
+          router.replace("/");
+        }, 2000);
+      }
+    };
+
+    updateTimer();
+    timerRef.current = setInterval(updateTimer, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [lockStartTime, router]);
+
+  // Format time remaining
+  const formatTimeRemaining = () => {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   async function fetchUserProfile() {
     try {
@@ -272,6 +316,7 @@ export default function PassengerDetails() {
           returnDate,
           tripType: "roundtrip",
           totalPrice, // Pass dynamic price forward
+          lockStartTime, // Pass timer start time forward
         },
       });
     } else {
@@ -286,6 +331,7 @@ export default function PassengerDetails() {
           date,
           tripType: "oneway",
           totalPrice, // Pass dynamic price forward
+          lockStartTime, // Pass timer start time forward
         },
       });
     }
@@ -420,6 +466,45 @@ export default function PassengerDetails() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Timer Display */}
+            {lockStartTime && (
+              <View
+                className={`rounded-[20px] p-3 mt-4 border flex-row items-center gap-3 ${
+                  timeRemaining <= 60
+                    ? "bg-red-50 border-red-200"
+                    : "bg-yellow-50 border-yellow-200"
+                }`}
+              >
+                <View
+                  className={`w-10 h-10 rounded-full items-center justify-center ${
+                    timeRemaining <= 60 ? "bg-red-100" : "bg-yellow-100"
+                  }`}
+                >
+                  <Ionicons
+                    name="time-outline"
+                    size={20}
+                    color={timeRemaining <= 60 ? "#dc2626" : "#ca8a04"}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text
+                    className={`font-urbanist-bold text-sm ${
+                      timeRemaining <= 60 ? "text-red-700" : "text-yellow-700"
+                    }`}
+                  >
+                    Complete booking in {formatTimeRemaining()}
+                  </Text>
+                  <Text
+                    className={`font-urbanist-medium text-xs ${
+                      timeRemaining <= 60 ? "text-red-600" : "text-yellow-600"
+                    }`}
+                  >
+                    Seats will be released after timer expires
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* Passenger Forms */}
             {passengers.map((passenger, index) => (
               <View
