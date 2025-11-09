@@ -22,6 +22,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as SecureStore from "expo-secure-store";
 import Loader from "../components/Loader";
 import PrimaryButton from "../components/PrimaryButton";
 import { toast } from "../lib/toast";
@@ -157,9 +158,7 @@ export default function SeatSelection() {
   const [pricingConfig, setPricingConfig] = useState(null);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [hasDocuments, setHasDocuments] = useState(false);
-  const [sessionId] = useState(
-    () => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  );
+  const [sessionId, setSessionId] = useState(null);
   const [lockedSeats, setLockedSeats] = useState(new Map()); // Map<seatNumber, {lockedBy, expiresAt}>
   const userUnlockingRef = useRef(new Set()); // Track seats being unlocked by user
   const [lockStartTime, setLockStartTime] = useState(null); // Track when first seat was locked
@@ -213,9 +212,39 @@ export default function SeatSelection() {
     : flight;
   const maxSeats = parseInt(passengers || 1);
 
+  // Initialize or retrieve sessionId
   useEffect(() => {
-    fetchData();
-  }, [currentFlight, currentStep]);
+    const initSessionId = async () => {
+      try {
+        const flightKey = `seat_session_${currentFlight?._id}`;
+        let existingSessionId = await SecureStore.getItemAsync(flightKey);
+
+        if (!existingSessionId) {
+          // Generate new sessionId
+          existingSessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          await SecureStore.setItemAsync(flightKey, existingSessionId);
+        }
+
+        setSessionId(existingSessionId);
+      } catch (error) {
+        console.error("Failed to initialize sessionId:", error);
+        // Fallback to memory-only sessionId
+        setSessionId(
+          `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        );
+      }
+    };
+
+    if (currentFlight?._id) {
+      initSessionId();
+    }
+  }, [currentFlight?._id]);
+
+  useEffect(() => {
+    if (sessionId) {
+      fetchData();
+    }
+  }, [currentFlight, currentStep, sessionId]);
 
   async function fetchData() {
     try {
@@ -272,28 +301,52 @@ export default function SeatSelection() {
         setReturnSeats(seatsRes.seats || []);
         // Initialize return locked seats
         const initialLocks = new Map();
+        const myReturnSeats = []; // Track seats locked by current user
         (seatsRes.seats || []).forEach((seat) => {
           if (seat.lockedBy && seat.lockExpiresAt) {
             initialLocks.set(seat.seatNumber, {
               lockedBy: seat.lockedBy,
               expiresAt: new Date(seat.lockExpiresAt),
+              sessionId: seat.sessionId, // Store sessionId to identify our locks
             });
+            // If this seat is locked by current user, add to selected seats
+            if (seat.sessionId === sessionId) {
+              myReturnSeats.push(seat);
+            }
           }
         });
         setReturnLockedSeats(initialLocks);
+        // Restore selected seats if they were locked by current user
+        if (myReturnSeats.length > 0) {
+          setSelectedSeats(myReturnSeats);
+        }
       } else {
         setSeats(seatsRes.seats || []);
         // Initialize locked seats from server
         const initialLocks = new Map();
+        const mySeats = []; // Track seats locked by current user
         (seatsRes.seats || []).forEach((seat) => {
           if (seat.lockedBy && seat.lockExpiresAt) {
             initialLocks.set(seat.seatNumber, {
               lockedBy: seat.lockedBy,
               expiresAt: new Date(seat.lockExpiresAt),
+              sessionId: seat.sessionId, // Store sessionId to identify our locks
             });
+            // If this seat is locked by current user, add to selected seats
+            if (seat.sessionId === sessionId) {
+              mySeats.push(seat);
+            }
           }
         });
         setLockedSeats(initialLocks);
+        // Restore selected seats if they were locked by current user
+        if (mySeats.length > 0) {
+          setSelectedSeats(mySeats);
+          // Restore timer if seats were previously locked
+          if (!lockStartTime) {
+            setLockStartTime(Date.now());
+          }
+        }
       }
 
       setPricingConfig(pricingRes.data.config);
@@ -358,6 +411,7 @@ export default function SeatSelection() {
           newLocks.set(data.seatNumber, {
             lockedBy: data.lockedBy,
             expiresAt: new Date(data.lockExpiresAt),
+            sessionId: data.sessionId, // Include sessionId from socket event
           });
           return newLocks;
         });
@@ -374,9 +428,17 @@ export default function SeatSelection() {
           (s) => s.seatNumber === data.seatNumber
         );
         if (wasSelected) {
-          setSelectedSeats((prev) =>
-            prev.filter((s) => s.seatNumber !== data.seatNumber)
-          );
+          setSelectedSeats((prev) => {
+            const newSeats = prev.filter(
+              (s) => s.seatNumber !== data.seatNumber
+            );
+            // Reset timer if all seats are removed
+            if (newSeats.length === 0) {
+              setLockStartTime(null);
+              setTimeRemaining(600);
+            }
+            return newSeats;
+          });
           // Only show message if we didn't unlock it ourselves
           const wasUserInitiated = userUnlockingRef.current.has(
             data.seatNumber
@@ -419,9 +481,17 @@ export default function SeatSelection() {
             title: "Seat Lock Expired",
             message: `Your selection for seat ${data.seatNumber} has expired`,
           });
-          setSelectedSeats((prev) =>
-            prev.filter((s) => s.seatNumber !== data.seatNumber)
-          );
+          setSelectedSeats((prev) => {
+            const newSeats = prev.filter(
+              (s) => s.seatNumber !== data.seatNumber
+            );
+            // Reset timer if all seats are removed
+            if (newSeats.length === 0) {
+              setLockStartTime(null);
+              setTimeRemaining(600);
+            }
+            return newSeats;
+          });
         }
       },
       onSeatCancelled: (data) => {
@@ -642,8 +712,8 @@ export default function SeatSelection() {
       return { isLocked: false, isLockedByMe: false };
     }
 
-    // Check if locked by current user (by checking if it's in selectedSeats)
-    const isLockedByMe = selectedSeats.some((s) => s.seatNumber === seatNumber);
+    // Check if locked by current user by comparing sessionId
+    const isLockedByMe = lock.sessionId === sessionId;
     return { isLocked: true, isLockedByMe };
   };
 

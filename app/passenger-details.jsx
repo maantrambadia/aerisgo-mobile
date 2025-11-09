@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import BottomSheetModal from "../components/BottomSheetModal";
 import { toast } from "../lib/toast";
 import { getProfile } from "../lib/profile";
 import { COLORS } from "../constants/colors";
+import { useSeatSocket } from "../hooks/useSeatSocket";
 
 const RoutePill = ({ from, to }) => {
   const fromShort = String(from).split(",")[0].trim();
@@ -100,6 +101,52 @@ export default function PassengerDetails() {
   // The same passengers will be used for both flights
   const currentFlight = isRoundTrip ? outboundFlight : flight;
   const currentSeats = isRoundTrip ? outboundSeats : seats;
+
+  // Socket.IO real-time event handlers for seat unlock/expiry
+  const socketHandlers = useMemo(
+    () => ({
+      onSeatUnlocked: (data) => {
+        // Check if any of our seats were unlocked
+        const affectedSeats = currentSeats.filter(
+          (seat) => seat.seatNumber === data.seatNumber
+        );
+        if (affectedSeats.length > 0) {
+          toast.error({
+            title: "Seat Released",
+            message: `Seat ${data.seatNumber} was released by admin. Redirecting...`,
+          });
+          setTimeout(() => {
+            router.replace("/");
+          }, 2000);
+        }
+      },
+      onSeatExpired: (data) => {
+        // Check if any of our seats expired
+        const affectedSeats = currentSeats.filter(
+          (seat) => seat.seatNumber === data.seatNumber
+        );
+        if (affectedSeats.length > 0) {
+          toast.error({
+            title: "Seat Lock Expired",
+            message: `Your selection for seat ${data.seatNumber} has expired. Redirecting...`,
+          });
+          setTimeout(() => {
+            router.replace("/");
+          }, 2000);
+        }
+      },
+      onError: (error) => {
+        console.error("Socket error:", error);
+      },
+    }),
+    [currentSeats, router]
+  );
+
+  // Initialize Socket.IO connection for both flights if round-trip
+  useSeatSocket(currentFlight?._id, socketHandlers);
+  if (isRoundTrip && returnFlight) {
+    useSeatSocket(returnFlight._id, socketHandlers);
+  }
 
   useEffect(() => {
     if (isRoundTrip) {

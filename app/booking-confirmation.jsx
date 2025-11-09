@@ -28,6 +28,7 @@ import { apiFetch } from "../lib/api";
 import { getRewardBalance } from "../lib/rewards";
 import Loader from "../components/Loader";
 import PrimaryButton from "../components/PrimaryButton";
+import { useSeatSocket } from "../hooks/useSeatSocket";
 
 const ScaleOnPress = ({
   children,
@@ -184,6 +185,52 @@ export default function BookingConfirmation() {
   const currentSeats = isRoundTrip ? outboundSeats : seats;
   const allSeats = isRoundTrip ? [...outboundSeats, ...returnSeats] : seats;
 
+  // Socket.IO real-time event handlers for seat unlock/expiry
+  const socketHandlers = useMemo(
+    () => ({
+      onSeatUnlocked: (data) => {
+        // Check if any of our seats were unlocked
+        const affectedSeats = allSeats.filter(
+          (seat) => seat.seatNumber === data.seatNumber
+        );
+        if (affectedSeats.length > 0) {
+          toast.error({
+            title: "Seat Released",
+            message: `Seat ${data.seatNumber} was released by admin. Redirecting...`,
+          });
+          setTimeout(() => {
+            router.replace("/");
+          }, 2000);
+        }
+      },
+      onSeatExpired: (data) => {
+        // Check if any of our seats expired
+        const affectedSeats = allSeats.filter(
+          (seat) => seat.seatNumber === data.seatNumber
+        );
+        if (affectedSeats.length > 0) {
+          toast.error({
+            title: "Seat Lock Expired",
+            message: `Your selection for seat ${data.seatNumber} has expired. Redirecting...`,
+          });
+          setTimeout(() => {
+            router.replace("/");
+          }, 2000);
+        }
+      },
+      onError: (error) => {
+        console.error("Socket error:", error);
+      },
+    }),
+    [allSeats, router]
+  );
+
+  // Initialize Socket.IO connection for both flights if round-trip
+  useSeatSocket(currentFlight?._id, socketHandlers);
+  if (isRoundTrip && returnFlight) {
+    useSeatSocket(returnFlight._id, socketHandlers);
+  }
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -239,7 +286,15 @@ export default function BookingConfirmation() {
 
   const pricing = useMemo(() => {
     // If dynamic price is available from seat selection, use it
-    if (dynamicTotalPrice) {
+    if (dynamicTotalPrice && pricingConfig) {
+      // Calculate extra legroom total from seats
+      let extraLegroomTotal = 0;
+      allSeats.forEach((seat) => {
+        if (seat.isExtraLegroom) {
+          extraLegroomTotal += pricingConfig.extraLegroom.charge;
+        }
+      });
+
       // Calculate breakdown from dynamic total
       const subtotal = dynamicTotalPrice / 1.08; // Remove 8% taxes (5% GST + 3% fuel)
       const gst = subtotal * 0.05;
@@ -250,7 +305,7 @@ export default function BookingConfirmation() {
 
       return {
         subtotal: Math.round(actualSubtotal * 100) / 100,
-        extraLegroomTotal: 0, // Included in subtotal
+        extraLegroomTotal: Math.round(extraLegroomTotal * 100) / 100,
         gst: Math.round(gst * 100) / 100,
         fuelSurcharge: Math.round(fuelSurcharge * 100) / 100,
         airportFee: Math.round(airportFee * 100) / 100,
