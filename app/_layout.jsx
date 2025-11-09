@@ -8,7 +8,7 @@ import "../global.css";
 import BottomNav from "../components/BottomNav";
 import ToastHost from "../components/ToastHost";
 import AnimatedSplash from "../components/AnimatedSplash";
-import { getToken } from "../lib/storage";
+import { AuthProvider } from "../context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,31 +34,13 @@ export default function RootLayout() {
     "Urbanist-ThinItalic": require("../assets/fonts/Urbanist-ThinItalic.ttf"),
   });
 
-  // Auth bootstrap: check persisted token
-  const [authChecked, setAuthChecked] = useState(false);
-  const [hasToken, setHasToken] = useState(false);
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const t = await getToken();
-        if (mounted) setHasToken(Boolean(t));
-      } finally {
-        if (mounted) setAuthChecked(true);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if ((fontsLoaded || fontError) && authChecked) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, authChecked]);
+  }, [fontsLoaded, fontError]);
 
   const pathname = usePathname();
   const { showNav, activeKey } = useMemo(() => {
@@ -72,200 +54,160 @@ export default function RootLayout() {
     return { showNav: Boolean(key), activeKey: key };
   }, [pathname]);
 
-  // Redirect based on auth on route changes
-  useEffect(() => {
-    if (!authChecked) return;
-    let cancelled = false;
-    (async () => {
-      const token = await getToken();
-      if (cancelled) return;
-      const isAuthRoute =
-        pathname === "/" ||
-        pathname === "/index" ||
-        pathname === "/sign-in" ||
-        pathname === "/sign-up" ||
-        pathname === "/forgot-password" ||
-        pathname === "/verify-otp" ||
-        pathname === "/reset-password";
-      const isProtectedRoute =
-        pathname === "/home" ||
-        pathname === "/tickets" ||
-        pathname === "/rewards" ||
-        pathname === "/profile" ||
-        pathname === "/search-results" ||
-        pathname === "/flight-details" ||
-        pathname === "/seat-selection" ||
-        pathname === "/passenger-details" ||
-        pathname === "/booking-confirmation" ||
-        pathname === "/edit-profile" ||
-        pathname === "/change-password" ||
-        pathname === "/user-documents" ||
-        pathname.startsWith("/check-in/") ||
-        pathname.startsWith("/meal-selection/") ||
-        pathname.startsWith("/baggage-info/");
-      if (token && isAuthRoute) {
-        router.replace("/home");
-      } else if (!token && isProtectedRoute) {
-        router.replace("/sign-in");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authChecked, pathname]);
+  // Auth and navigation protection is now handled by AuthContext
 
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
-    <SafeScreen
-      disableBottom={
-        pathname === "/" ||
-        pathname === "/search-results" ||
-        pathname === "/profile" ||
-        pathname === "/rewards" ||
-        pathname === "/booking-confirmation" ||
-        pathname === "/tickets" ||
-        pathname === "/passenger-details" ||
-        pathname === "/flight-details" ||
-        pathname === "/seat-selection" ||
-        pathname.startsWith("/check-in/") ||
-        pathname.startsWith("/meal-selection/") ||
-        pathname.startsWith("/baggage-info/")
-      }
-    >
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: "none",
-          gestureEnabled: false,
-          fullScreenGestureEnabled: false,
-        }}
-      >
-        {/* Welcome */}
-        <Stack.Screen
-          name="index"
-          options={{ animation: "slide_from_right" }}
-        />
-        {/* Home */}
-        <Stack.Screen
-          name="home"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        {/* Main Tabs: disable back gesture */}
-        <Stack.Screen
-          name="tickets"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="rewards"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="profile"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        {/* Search Results */}
-        <Stack.Screen
-          name="search-results"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="flight-details"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="seat-selection"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="booking-confirmation"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="passenger-details"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        {/* Profile Screens */}
-        <Stack.Screen
-          name="edit-profile"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="change-password"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="user-documents"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        {/* Check-in & Related Features */}
-        <Stack.Screen
-          name="check-in/[id]"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="meal-selection/[id]"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen
-          name="baggage-info/[id]"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        {/* Auth */}
-        <Stack.Screen
-          name="(auth)/sign-up"
-          options={{
-            animation: "none",
-          }}
-        />
-        <Stack.Screen
-          name="(auth)/sign-in"
-          options={{
-            animation: "none",
-          }}
-        />
-        <Stack.Screen
-          name="(auth)/forgot-password"
-          options={{
-            animation: "none",
-          }}
-        />
-        <Stack.Screen
-          name="(auth)/verify-otp"
-          options={{
-            animation: "none",
-          }}
-        />
-        <Stack.Screen
-          name="(auth)/reset-password"
-          options={{
-            animation: "none",
-          }}
-        />
-      </Stack>
-      {showNav ? (
-        <BottomNav
-          active={activeKey}
-          onPressItem={(key) => {
-            if (key === "home") router.replace("/home");
-            if (key === "tickets") router.replace("/tickets");
-            if (key === "rewards") router.replace("/rewards");
-            if (key === "profile") router.replace("/profile");
-          }}
-        />
-      ) : null}
-      {/* Global Toasts */}
-      <ToastHost />
-      {/* Animated Splash overlay after native splash */}
-      <AnimatedSplash
-        visible={
-          (fontsLoaded || fontError) && authChecked && showAnimatedSplash
+    <AuthProvider>
+      <SafeScreen
+        disableBottom={
+          pathname === "/" ||
+          pathname === "/search-results" ||
+          pathname === "/profile" ||
+          pathname === "/rewards" ||
+          pathname === "/booking-confirmation" ||
+          pathname === "/tickets" ||
+          pathname === "/passenger-details" ||
+          pathname === "/flight-details" ||
+          pathname === "/seat-selection" ||
+          pathname.startsWith("/check-in/") ||
+          pathname.startsWith("/meal-selection/") ||
+          pathname.startsWith("/baggage-info/")
         }
-        onFinish={() => setShowAnimatedSplash(false)}
-      />
-    </SafeScreen>
+      >
+        <StatusBar style="dark" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "none",
+            gestureEnabled: false,
+            fullScreenGestureEnabled: false,
+          }}
+        >
+          {/* Welcome */}
+          <Stack.Screen
+            name="index"
+            options={{ animation: "slide_from_right" }}
+          />
+          {/* Home */}
+          <Stack.Screen
+            name="home"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          {/* Main Tabs: disable back gesture */}
+          <Stack.Screen
+            name="tickets"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="rewards"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="profile"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          {/* Search Results */}
+          <Stack.Screen
+            name="search-results"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="flight-details"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="seat-selection"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="booking-confirmation"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="passenger-details"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          {/* Profile Screens */}
+          <Stack.Screen
+            name="edit-profile"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="change-password"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="user-documents"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          {/* Check-in & Related Features */}
+          <Stack.Screen
+            name="check-in/[id]"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="meal-selection/[id]"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="baggage-info/[id]"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          {/* Auth */}
+          <Stack.Screen
+            name="(auth)/sign-up"
+            options={{
+              animation: "none",
+            }}
+          />
+          <Stack.Screen
+            name="(auth)/sign-in"
+            options={{
+              animation: "none",
+            }}
+          />
+          <Stack.Screen
+            name="(auth)/forgot-password"
+            options={{
+              animation: "none",
+            }}
+          />
+          <Stack.Screen
+            name="(auth)/verify-otp"
+            options={{
+              animation: "none",
+            }}
+          />
+          <Stack.Screen
+            name="(auth)/reset-password"
+            options={{
+              animation: "none",
+            }}
+          />
+        </Stack>
+        {showNav ? (
+          <BottomNav
+            active={activeKey}
+            onPressItem={(key) => {
+              if (key === "home") router.replace("/home");
+              if (key === "tickets") router.replace("/tickets");
+              if (key === "rewards") router.replace("/rewards");
+              if (key === "profile") router.replace("/profile");
+            }}
+          />
+        ) : null}
+        {/* Global Toasts */}
+        <ToastHost />
+        {/* Animated Splash overlay after native splash */}
+        <AnimatedSplash
+          visible={(fontsLoaded || fontError) && showAnimatedSplash}
+          onFinish={() => setShowAnimatedSplash(false)}
+        />
+      </SafeScreen>
+    </AuthProvider>
   );
 }

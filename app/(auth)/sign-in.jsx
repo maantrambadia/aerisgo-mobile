@@ -22,8 +22,10 @@ import PrimaryButton from "../../components/PrimaryButton";
 import welcomeLogo from "../../assets/images/welcome-logo.png";
 import { signInApp as apiSignInApp } from "../../lib/auth";
 import { toast } from "../../lib/toast";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SignIn() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,12 +50,18 @@ export default function SignIn() {
 
     setLoading(true);
     try {
-      await apiSignInApp({ email: em, password: pw, remember: true });
+      const data = await apiSignInApp({
+        email: em,
+        password: pw,
+        remember: true,
+      });
+      // Update AuthContext
+      await login(data.user, data.token);
       try {
         await Haptics.selectionAsync();
       } catch {}
       toast.success({ title: "Signed in", message: "Welcome back!" });
-      router.replace("/home");
+      // AuthContext will handle redirect to /home
     } catch (e) {
       const msg = e?.message || "Sign in failed";
       if (e?.status === 403) {

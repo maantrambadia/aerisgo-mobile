@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -21,14 +21,16 @@ import { Ionicons } from "@expo/vector-icons";
 import PrimaryButton from "../../components/PrimaryButton";
 import welcomeLogo from "../../assets/images/welcome-logo.png";
 import {
-  verifyEmail as apiVerifyEmail,
-  resendOtp as apiResendOtp,
+  verifyEmail,
+  resendOtp,
   verifyPasswordReset as apiVerifyPasswordReset,
   resendPasswordResetOtp as apiResendPasswordResetOtp,
 } from "../../lib/auth";
 import { toast } from "../../lib/toast";
+import { useAuth } from "../../context/AuthContext";
 
 export default function VerifyOtp() {
+  const { login } = useAuth();
   const { email = "", next, mode, autoResend } = useLocalSearchParams();
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [seconds, setSeconds] = useState(30);
@@ -91,7 +93,9 @@ export default function VerifyOtp() {
           params: { email: emailStr, resetToken },
         });
       } else {
-        await apiVerifyEmail({ email: emailStr, code });
+        const data = await apiVerifyEmail({ email: emailStr, code });
+        // Update AuthContext with user data
+        await login(data.user, data.token);
         try {
           await Haptics.selectionAsync();
         } catch {}
@@ -99,7 +103,7 @@ export default function VerifyOtp() {
           title: "Email verified",
           message: "Welcome! Taking you to Home",
         });
-        router.replace("/home");
+        // AuthContext will handle redirect to /home
       }
     } catch (e) {
       toast.error({

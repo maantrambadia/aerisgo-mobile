@@ -21,10 +21,11 @@ import * as Haptics from "expo-haptics";
 import PrimaryButton from "../components/PrimaryButton";
 import Loader from "../components/Loader";
 import { getUserProfile } from "../lib/storage";
-import { signOut, fetchMe } from "../lib/auth";
+import { fetchMe } from "../lib/auth";
 import { router } from "expo-router";
 import { toast } from "../lib/toast";
 import { useFocusEffect } from "@react-navigation/native";
+import { useAuth } from "../context/AuthContext";
 
 // Micro-interaction: Scale on press
 const ScalePress = ({ children, onPress, className = "" }) => {
@@ -137,6 +138,7 @@ const FAQItem = ({ question, answer, delay = 0 }) => {
 };
 
 export default function Profile() {
+  const { logout: authLogout, user: authUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
@@ -364,18 +366,17 @@ export default function Profile() {
               leftIconName="log-out-outline"
               onPress={async () => {
                 try {
-                  await signOut();
+                  await authLogout();
                   toast.success({
                     title: "Signed out",
                     message: "See you soon!",
                   });
+                  // AuthContext handles redirect to sign-in
                 } catch (e) {
                   toast.error({
-                    title: "Sign out failed",
-                    message: e?.message || "Try again",
+                    title: "Error",
+                    message: e?.message || "Failed to sign out",
                   });
-                } finally {
-                  router.replace("/sign-in");
                 }
               }}
               withHaptics
