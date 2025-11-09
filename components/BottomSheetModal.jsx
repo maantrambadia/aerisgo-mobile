@@ -56,8 +56,8 @@ export default function BottomSheetModal({
   const ContentWrapper = keyboardAware ? KeyboardAvoidingView : View;
   const keyboardProps = keyboardAware
     ? {
-        behavior: Platform.OS === "ios" ? "padding" : "height",
-        keyboardVerticalOffset: Platform.OS === "ios" ? 0 : 20,
+        behavior: Platform.OS === "ios" ? "padding" : "padding",
+        keyboardVerticalOffset: 0,
       }
     : {};
 
