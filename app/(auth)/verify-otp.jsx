@@ -93,7 +93,7 @@ export default function VerifyOtp() {
           params: { email: emailStr, resetToken },
         });
       } else {
-        const data = await apiVerifyEmail({ email: emailStr, code });
+        const data = await verifyEmail({ email: emailStr, code });
         // Update AuthContext with user data
         await login(data.user, data.token);
         try {
@@ -124,7 +124,7 @@ export default function VerifyOtp() {
       if (mode === "password_reset") {
         await apiResendPasswordResetOtp({ email: emailStr });
       } else {
-        await apiResendOtp({ email: emailStr });
+        await resendOtp({ email: emailStr });
       }
       try {
         await Haptics.selectionAsync();
@@ -158,7 +158,7 @@ export default function VerifyOtp() {
     (async () => {
       setResending(true);
       try {
-        await apiResendOtp({ email: emailStr });
+        await resendOtp({ email: emailStr });
         if (!cancelled) {
           setSeconds(30);
           toast.info({
