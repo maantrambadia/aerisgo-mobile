@@ -16,7 +16,9 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from "@react-native-community/datetimepicker";
 import Loader from "../components/Loader";
 import PrimaryButton from "../components/PrimaryButton";
 import FormInput from "../components/FormInput";
@@ -629,9 +631,39 @@ export default function PassengerDetails() {
                     Date of Birth <Text className="text-red-500">*</Text>
                   </Text>
                   <TouchableOpacity
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowDatePicker(index);
+                    onPress={async () => {
+                      await Haptics.impactAsync(
+                        Haptics.ImpactFeedbackStyle.Light
+                      );
+
+                      if (Platform.OS === "android") {
+                        const currentValue = passengers[index]?.dateOfBirth
+                          ? new Date(passengers[index].dateOfBirth)
+                          : new Date(2000, 0, 1);
+
+                        DateTimePickerAndroid.open({
+                          value: currentValue,
+                          mode: "date",
+                          maximumDate: new Date(),
+                          onChange: (event, selectedDate) => {
+                            if (
+                              event.type === "set" &&
+                              selectedDate instanceof Date
+                            ) {
+                              const today = new Date();
+                              const safeDate =
+                                selectedDate > today ? today : selectedDate;
+                              handlePassengerChange(
+                                index,
+                                "dateOfBirth",
+                                safeDate.toISOString().split("T")[0]
+                              );
+                            }
+                          },
+                        });
+                      } else {
+                        setShowDatePicker(index);
+                      }
                     }}
                     className="px-4 py-3.5 bg-secondary/30 rounded-2xl border border-primary/10 flex-row items-center"
                   >
@@ -873,108 +905,113 @@ export default function PassengerDetails() {
         </Animated.View>
       </KeyboardAvoidingView>
 
-      {/* Date Picker Modal */}
-      <BottomSheetModal
-        visible={showDatePicker !== null}
-        onClose={() => {
-          setShowDatePicker(null);
-        }}
-        title="Select Date of Birth"
-        scrollable={false}
-        maxHeight="55%"
-      >
-        {showDatePicker !== null && (
-          <View className="mt-2">
-            <DateTimePicker
-              value={
-                passengers[showDatePicker]?.dateOfBirth
-                  ? new Date(passengers[showDatePicker].dateOfBirth)
-                  : new Date()
-              }
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              maximumDate={new Date()}
-              textColor={Platform.OS === "ios" ? COLORS.primary : undefined}
-              accentColor={COLORS.primary}
-              onChange={(event, selectedDate) => {
-                if (Platform.OS === "android") {
-                  setShowDatePicker(null);
+      {/* iOS Date Picker Modal */}
+      {Platform.OS === "ios" && (
+        <BottomSheetModal
+          visible={showDatePicker !== null}
+          onClose={() => {
+            setShowDatePicker(null);
+          }}
+          title="Select Date of Birth"
+          scrollable={false}
+          maxHeight="55%"
+        >
+          {showDatePicker !== null && (
+            <View className="mt-2">
+              <DateTimePicker
+                value={
+                  passengers[showDatePicker]?.dateOfBirth
+                    ? new Date(
+                        passengers[showDatePicker].dateOfBirth + "T12:00:00"
+                      )
+                    : new Date(2000, 0, 1, 12, 0, 0)
                 }
-                if (selectedDate) {
-                  handlePassengerChange(
-                    showDatePicker,
-                    "dateOfBirth",
-                    selectedDate.toISOString().split("T")[0]
-                  );
-                }
-              }}
-            />
-          </View>
-        )}
-        {showDatePicker !== null && passengers[showDatePicker]?.dateOfBirth && (
-          <View className="flex-row items-center justify-between py-4 mt-4">
-            <TouchableOpacity
-              className="px-4 py-3 rounded-full bg-primary/10"
-              onPress={() => {
-                const currentDate = passengers[showDatePicker]?.dateOfBirth
-                  ? new Date(passengers[showDatePicker].dateOfBirth)
-                  : new Date();
-                const newDate = new Date(currentDate);
-                newDate.setDate(newDate.getDate() - 1);
-                handlePassengerChange(
-                  showDatePicker,
-                  "dateOfBirth",
-                  newDate.toISOString().split("T")[0]
-                );
-              }}
-            >
-              <Ionicons name="chevron-back" size={20} color="#541424" />
-            </TouchableOpacity>
-            <Text
-              className="text-primary font-urbanist-bold text-base"
-              numberOfLines={2}
-            >
-              {new Date(
-                passengers[showDatePicker].dateOfBirth
-              ).toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-              })}
-            </Text>
-            <TouchableOpacity
-              disabled={
-                passengers[showDatePicker]?.dateOfBirth >=
-                new Date().toISOString().split("T")[0]
-              }
-              className="px-4 py-3 rounded-full bg-primary/10"
-              style={{
-                opacity:
-                  passengers[showDatePicker]?.dateOfBirth >=
-                  new Date().toISOString().split("T")[0]
-                    ? 0.4
-                    : 1,
-              }}
-              onPress={() => {
-                const currentDate = passengers[showDatePicker]?.dateOfBirth
-                  ? new Date(passengers[showDatePicker].dateOfBirth)
-                  : new Date();
-                const newDate = new Date(currentDate);
-                newDate.setDate(newDate.getDate() + 1);
-                if (newDate <= new Date()) {
-                  handlePassengerChange(
-                    showDatePicker,
-                    "dateOfBirth",
-                    newDate.toISOString().split("T")[0]
-                  );
-                }
-              }}
-            >
-              <Ionicons name="chevron-forward" size={20} color="#541424" />
-            </TouchableOpacity>
-          </View>
-        )}
-      </BottomSheetModal>
+                mode="date"
+                display="spinner"
+                maximumDate={new Date()}
+                textColor={COLORS.primary}
+                onChange={(event, selectedDate) => {
+                  if (selectedDate) {
+                    handlePassengerChange(
+                      showDatePicker,
+                      "dateOfBirth",
+                      selectedDate.toISOString().split("T")[0]
+                    );
+                  }
+                }}
+              />
+            </View>
+          )}
+          {showDatePicker !== null &&
+            passengers[showDatePicker]?.dateOfBirth && (
+              <View className="flex-row items-center justify-between py-4 mt-4">
+                <TouchableOpacity
+                  className="px-4 py-3 rounded-full bg-primary/10"
+                  onPress={() => {
+                    const currentDate = passengers[showDatePicker]?.dateOfBirth
+                      ? new Date(
+                          passengers[showDatePicker].dateOfBirth + "T12:00:00"
+                        )
+                      : new Date();
+                    const newDate = new Date(currentDate);
+                    newDate.setDate(newDate.getDate() - 1);
+                    handlePassengerChange(
+                      showDatePicker,
+                      "dateOfBirth",
+                      newDate.toISOString().split("T")[0]
+                    );
+                  }}
+                >
+                  <Ionicons name="chevron-back" size={20} color="#541424" />
+                </TouchableOpacity>
+                <Text
+                  className="text-primary font-urbanist-bold text-base"
+                  numberOfLines={2}
+                >
+                  {new Date(
+                    passengers[showDatePicker].dateOfBirth + "T12:00:00"
+                  ).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </Text>
+                <TouchableOpacity
+                  disabled={
+                    passengers[showDatePicker]?.dateOfBirth >=
+                    new Date().toISOString().split("T")[0]
+                  }
+                  className="px-4 py-3 rounded-full bg-primary/10"
+                  style={{
+                    opacity:
+                      passengers[showDatePicker]?.dateOfBirth >=
+                      new Date().toISOString().split("T")[0]
+                        ? 0.4
+                        : 1,
+                  }}
+                  onPress={() => {
+                    const currentDate = passengers[showDatePicker]?.dateOfBirth
+                      ? new Date(
+                          passengers[showDatePicker].dateOfBirth + "T12:00:00"
+                        )
+                      : new Date();
+                    const newDate = new Date(currentDate);
+                    newDate.setDate(newDate.getDate() + 1);
+                    if (newDate <= new Date()) {
+                      handlePassengerChange(
+                        showDatePicker,
+                        "dateOfBirth",
+                        newDate.toISOString().split("T")[0]
+                      );
+                    }
+                  }}
+                >
+                  <Ionicons name="chevron-forward" size={20} color="#541424" />
+                </TouchableOpacity>
+              </View>
+            )}
+        </BottomSheetModal>
+      )}
 
       {/* Gender Picker Modal */}
       <BottomSheetModal
