@@ -36,8 +36,13 @@
           "backgroundColor": "#e3d0bf"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications"
     ],
+    "notification": {
+      "icon": "./assets/images/notification-icon.png",
+      "color": "#541424"
+    },
     "experiments": {
       "typedRoutes": true
     },

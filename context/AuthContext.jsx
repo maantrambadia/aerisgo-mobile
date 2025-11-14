@@ -8,6 +8,7 @@ import {
 } from "../lib/storage";
 import { fetchMe } from "../lib/auth";
 import { setAuthErrorHandler } from "../lib/api";
+import { registerPushToken } from "../lib/notifications";
 
 const AuthContext = createContext({
   user: null,
@@ -105,6 +106,13 @@ export function AuthProvider({ children }) {
         if (userData) {
           // Token valid, user authenticated
           setUser(userData);
+
+          // Best-effort: register push token for this user
+          try {
+            await registerPushToken();
+          } catch (pushError) {
+            console.error("Failed to register push token on init:", pushError);
+          }
         } else {
           // Token invalid or expired
           await clearAuth();
@@ -142,6 +150,13 @@ export function AuthProvider({ children }) {
 
   const login = async (userData, token) => {
     setUser(userData);
+
+    // Best-effort: register push token right after login
+    try {
+      await registerPushToken();
+    } catch (pushError) {
+      console.error("Failed to register push token after login:", pushError);
+    }
   };
 
   const logout = async () => {
