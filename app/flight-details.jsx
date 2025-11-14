@@ -235,6 +235,7 @@ export default function FlightDetails() {
               try {
                 await Haptics.selectionAsync();
               } catch {}
+              router.push("/notifications");
             }}
           >
             <Ionicons name="notifications-outline" size={22} color="#541424" />

@@ -289,7 +289,15 @@ export default function Home() {
               </Text>
             </View>
           </View>
-          <TouchableOpacity className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15">
+          <TouchableOpacity
+            className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center border border-primary/15"
+            onPress={async () => {
+              try {
+                await Haptics.selectionAsync();
+              } catch {}
+              router.push("/notifications");
+            }}
+          >
             <Ionicons name="notifications-outline" size={22} color="#541424" />
           </TouchableOpacity>
         </View>

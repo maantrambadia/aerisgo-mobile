@@ -73,6 +73,7 @@ export default function RootLayout() {
           pathname === "/passenger-details" ||
           pathname === "/flight-details" ||
           pathname === "/seat-selection" ||
+          pathname === "/notifications" ||
           pathname.startsWith("/check-in/") ||
           pathname.startsWith("/meal-selection/") ||
           pathname.startsWith("/baggage-info/")
@@ -121,6 +122,10 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="seat-selection"
+            options={{ animation: "none", gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="notifications"
             options={{ animation: "none", gestureEnabled: false }}
           />
           <Stack.Screen

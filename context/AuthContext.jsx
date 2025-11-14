@@ -67,6 +67,7 @@ export function AuthProvider({ children }) {
       "/edit-profile",
       "/change-password",
       "/user-documents",
+      "/notifications",
     ];
 
     const isProtectedRoute =
