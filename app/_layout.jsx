@@ -8,41 +8,16 @@ import "../global.css";
 import BottomNav from "../components/BottomNav";
 import ToastHost from "../components/ToastHost";
 import AnimatedSplash from "../components/AnimatedSplash";
-import { AuthProvider } from "../context/AuthContext";
+import { AuthProvider, useAuth } from "../context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    "Urbanist-Black": require("../assets/fonts/Urbanist-Black.ttf"),
-    "Urbanist-BlackItalic": require("../assets/fonts/Urbanist-BlackItalic.ttf"),
-    "Urbanist-Bold": require("../assets/fonts/Urbanist-Bold.ttf"),
-    "Urbanist-BoldItalic": require("../assets/fonts/Urbanist-BoldItalic.ttf"),
-    "Urbanist-ExtraBold": require("../assets/fonts/Urbanist-ExtraBold.ttf"),
-    "Urbanist-ExtraBoldItalic": require("../assets/fonts/Urbanist-ExtraBoldItalic.ttf"),
-    "Urbanist-ExtraLight": require("../assets/fonts/Urbanist-ExtraLight.ttf"),
-    "Urbanist-ExtraLightItalic": require("../assets/fonts/Urbanist-ExtraLightItalic.ttf"),
-    "Urbanist-Italic": require("../assets/fonts/Urbanist-Italic.ttf"),
-    "Urbanist-Light": require("../assets/fonts/Urbanist-Light.ttf"),
-    "Urbanist-LightItalic": require("../assets/fonts/Urbanist-LightItalic.ttf"),
-    "Urbanist-Medium": require("../assets/fonts/Urbanist-Medium.ttf"),
-    "Urbanist-MediumItalic": require("../assets/fonts/Urbanist-MediumItalic.ttf"),
-    "Urbanist-Regular": require("../assets/fonts/Urbanist-Regular.ttf"),
-    "Urbanist-SemiBold": require("../assets/fonts/Urbanist-SemiBold.ttf"),
-    "Urbanist-SemiBoldItalic": require("../assets/fonts/Urbanist-SemiBoldItalic.ttf"),
-    "Urbanist-Thin": require("../assets/fonts/Urbanist-Thin.ttf"),
-    "Urbanist-ThinItalic": require("../assets/fonts/Urbanist-ThinItalic.ttf"),
-  });
-
+// Inner component that has access to AuthContext
+function AppContent() {
+  const pathname = usePathname();
+  const { isLoading: authLoading } = useAuth();
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
-  const pathname = usePathname();
   const { showNav, activeKey } = useMemo(() => {
     const map = {
       "/home": "home",
@@ -54,14 +29,11 @@ export default function RootLayout() {
     return { showNav: Boolean(key), activeKey: key };
   }, [pathname]);
 
-  // Auth and navigation protection is now handled by AuthContext
-
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+  // Keep splash visible until auth check completes
+  const shouldShowSplash = showAnimatedSplash || authLoading;
 
   return (
-    <AuthProvider>
+    <>
       <SafeScreen
         disableBottom={
           pathname === "/" ||
@@ -207,12 +179,51 @@ export default function RootLayout() {
         ) : null}
         {/* Global Toasts */}
         <ToastHost />
-        {/* Animated Splash overlay after native splash */}
-        <AnimatedSplash
-          visible={(fontsLoaded || fontError) && showAnimatedSplash}
-          onFinish={() => setShowAnimatedSplash(false)}
-        />
       </SafeScreen>
+      {/* Animated Splash overlay - stays visible until auth completes */}
+      <AnimatedSplash
+        visible={shouldShowSplash}
+        onFinish={() => setShowAnimatedSplash(false)}
+      />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    "Urbanist-Black": require("../assets/fonts/Urbanist-Black.ttf"),
+    "Urbanist-BlackItalic": require("../assets/fonts/Urbanist-BlackItalic.ttf"),
+    "Urbanist-Bold": require("../assets/fonts/Urbanist-Bold.ttf"),
+    "Urbanist-BoldItalic": require("../assets/fonts/Urbanist-BoldItalic.ttf"),
+    "Urbanist-ExtraBold": require("../assets/fonts/Urbanist-ExtraBold.ttf"),
+    "Urbanist-ExtraBoldItalic": require("../assets/fonts/Urbanist-ExtraBoldItalic.ttf"),
+    "Urbanist-ExtraLight": require("../assets/fonts/Urbanist-ExtraLight.ttf"),
+    "Urbanist-ExtraLightItalic": require("../assets/fonts/Urbanist-ExtraLightItalic.ttf"),
+    "Urbanist-Italic": require("../assets/fonts/Urbanist-Italic.ttf"),
+    "Urbanist-Light": require("../assets/fonts/Urbanist-Light.ttf"),
+    "Urbanist-LightItalic": require("../assets/fonts/Urbanist-LightItalic.ttf"),
+    "Urbanist-Medium": require("../assets/fonts/Urbanist-Medium.ttf"),
+    "Urbanist-MediumItalic": require("../assets/fonts/Urbanist-MediumItalic.ttf"),
+    "Urbanist-Regular": require("../assets/fonts/Urbanist-Regular.ttf"),
+    "Urbanist-SemiBold": require("../assets/fonts/Urbanist-SemiBold.ttf"),
+    "Urbanist-SemiBoldItalic": require("../assets/fonts/Urbanist-SemiBoldItalic.ttf"),
+    "Urbanist-Thin": require("../assets/fonts/Urbanist-Thin.ttf"),
+    "Urbanist-ThinItalic": require("../assets/fonts/Urbanist-ThinItalic.ttf"),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
+  return (
+    <AuthProvider>
+      <AppContent />
     </AuthProvider>
   );
 }
