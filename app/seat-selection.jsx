@@ -79,8 +79,10 @@ const SeatButton = ({
   rowClass,
   isLocked,
   isLockedByMe,
+  isLoading,
 }) => {
   const getSeatColor = () => {
+    if (isLoading) return "#f59e0b"; // Amber - Loading state
     if (selected || isLockedByMe) return "#541424"; // Primary - Selected by me
     if (isLocked) return "#f97316"; // Orange - Locked by someone else
     if (!seat.isAvailable) return "#dc2626"; // Red - Occupied
@@ -91,6 +93,7 @@ const SeatButton = ({
   };
 
   const getBorderColor = () => {
+    if (isLoading) return "#d97706"; // Darker amber for loading
     if (selected || isLockedByMe) return "#6b1a2f";
     if (isLocked) return "#ea580c";
     if (!seat.isAvailable) return "#991b1b";
@@ -101,6 +104,7 @@ const SeatButton = ({
   };
 
   const handlePress = () => {
+    if (isLoading) return; // Prevent double-click while loading
     if (!seat.isAvailable) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       toast.warn({
@@ -117,7 +121,6 @@ const SeatButton = ({
       });
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onPress(seat);
   };
 
@@ -128,22 +131,31 @@ const SeatButton = ({
         style={{
           backgroundColor: getSeatColor(),
           borderColor: getBorderColor(),
+          opacity: isLoading ? 0.8 : 1,
         }}
       >
-        <Ionicons
-          name={
-            !seat.isAvailable
-              ? "close"
-              : isLocked && !isLockedByMe
-                ? "lock-closed"
-                : "square-outline"
-          }
-          size={14}
-          color="#e3d7cb"
-        />
-        <Text className="text-[8px] font-urbanist-bold text-text mt-0.5">
-          {seat.seatNumber}
-        </Text>
+        {isLoading ? (
+          <View className="items-center justify-center">
+            <Ionicons name="hourglass" size={14} color="#e3d7cb" />
+          </View>
+        ) : (
+          <>
+            <Ionicons
+              name={
+                !seat.isAvailable
+                  ? "close"
+                  : isLocked && !isLockedByMe
+                    ? "lock-closed"
+                    : "square-outline"
+              }
+              size={14}
+              color="#e3d7cb"
+            />
+            <Text className="text-[8px] font-urbanist-bold text-text mt-0.5">
+              {seat.seatNumber}
+            </Text>
+          </>
+        )}
       </View>
     </ScaleOnPress>
   );
@@ -164,6 +176,7 @@ export default function SeatSelection() {
   const [lockStartTime, setLockStartTime] = useState(null); // Track when first seat was locked
   const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
   const timerRef = useRef(null);
+  const [lockingSeats, setLockingSeats] = useState(new Set()); // Track seats being locked/unlocked
 
   // Round-trip support
   const [currentStep, setCurrentStep] = useState("outbound"); // "outbound" or "return"
@@ -525,16 +538,19 @@ export default function SeatSelection() {
     );
 
     if (isAlreadySelected) {
-      // Unlock the seat
+      // Unlock the seat - Optimistic UI
+      // Show loading state
+      setLockingSeats((prev) => {
+        const next = new Set(prev);
+        next.add(seat.seatNumber);
+        return next;
+      });
+
       try {
         // Mark this seat as being unlocked by user
         userUnlockingRef.current.add(seat.seatNumber);
 
-        await unlockSeat({
-          flightId: currentFlight._id,
-          seatNumber: seat.seatNumber,
-          sessionId,
-        });
+        // Optimistic update - remove immediately
         const newSelectedSeats = selectedSeats.filter(
           (s) => s.seatNumber !== seat.seatNumber
         );
@@ -546,15 +562,34 @@ export default function SeatSelection() {
           setTimeRemaining(600);
         }
 
+        // Then sync with server
+        await unlockSeat({
+          flightId: currentFlight._id,
+          seatNumber: seat.seatNumber,
+          sessionId,
+        });
+
         // Remove from tracking after a short delay
         setTimeout(() => {
           userUnlockingRef.current.delete(seat.seatNumber);
         }, 1000);
       } catch (error) {
         console.error("Failed to unlock seat:", error);
+        // Rollback - add seat back
+        setSelectedSeats((prev) => [...prev, seat]);
+        // Restore timer if needed
+        if (selectedSeats.length === 1 && !lockStartTime) {
+          setLockStartTime(Date.now());
+        }
         toast.error({
           title: "Error",
           message: "Failed to deselect seat",
+        });
+      } finally {
+        setLockingSeats((prev) => {
+          const next = new Set(prev);
+          next.delete(seat.seatNumber);
+          return next;
         });
       }
     } else {
@@ -566,20 +601,19 @@ export default function SeatSelection() {
         return;
       }
 
-      // Lock the seat
+      // Lock the seat - Optimistic UI
+      // Show loading state
+      setLockingSeats((prev) => {
+        const next = new Set(prev);
+        next.add(seat.seatNumber);
+        return next;
+      });
+
+      // Haptic feedback immediately
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
       try {
-        // Only pass previousSeat if we're at max capacity (replacing a seat)
-        // For multiple passengers, don't unlock previous seats
-        const previousSeat =
-          selectedSeats.length >= maxSeats
-            ? selectedSeats[0].seatNumber
-            : undefined;
-        await lockSeat({
-          flightId: currentFlight._id,
-          seatNumber: seat.seatNumber,
-          sessionId,
-          previousSeat,
-        });
+        // Optimistic update - add immediately
         const newSelectedSeats = [...selectedSeats, seat];
         setSelectedSeats(newSelectedSeats);
 
@@ -587,14 +621,45 @@ export default function SeatSelection() {
         if (selectedSeats.length === 0 && !lockStartTime) {
           setLockStartTime(Date.now());
         }
+
+        // Then sync with server
+        const previousSeat =
+          selectedSeats.length >= maxSeats
+            ? selectedSeats[0].seatNumber
+            : undefined;
+
+        await lockSeat({
+          flightId: currentFlight._id,
+          seatNumber: seat.seatNumber,
+          sessionId,
+          previousSeat,
+        });
       } catch (error) {
         console.error("Failed to lock seat:", error);
+
+        // Rollback - remove seat
+        setSelectedSeats((prev) =>
+          prev.filter((s) => s.seatNumber !== seat.seatNumber)
+        );
+
+        // Reset timer if this was the only seat
+        if (selectedSeats.length === 0) {
+          setLockStartTime(null);
+          setTimeRemaining(600);
+        }
+
         const message =
           error.message ||
           "Failed to select seat. It may be locked by another user.";
         toast.error({
           title: "Error",
           message,
+        });
+      } finally {
+        setLockingSeats((prev) => {
+          const next = new Set(prev);
+          next.delete(seat.seatNumber);
+          return next;
         });
       }
     }
@@ -997,6 +1062,7 @@ export default function SeatSelection() {
                               rowClass={rowClass}
                               isLocked={lockStatus.isLocked}
                               isLockedByMe={lockStatus.isLockedByMe}
+                              isLoading={lockingSeats.has(seat.seatNumber)}
                             />
                           );
                         })}
@@ -1018,6 +1084,7 @@ export default function SeatSelection() {
                               rowClass={rowClass}
                               isLocked={lockStatus.isLocked}
                               isLockedByMe={lockStatus.isLockedByMe}
+                              isLoading={lockingSeats.has(seat.seatNumber)}
                             />
                           );
                         })}
@@ -1039,6 +1106,7 @@ export default function SeatSelection() {
                               rowClass={rowClass}
                               isLocked={lockStatus.isLocked}
                               isLockedByMe={lockStatus.isLockedByMe}
+                              isLoading={lockingSeats.has(seat.seatNumber)}
                             />
                           );
                         })}
@@ -1065,6 +1133,7 @@ export default function SeatSelection() {
                               rowClass={rowClass}
                               isLocked={lockStatus.isLocked}
                               isLockedByMe={lockStatus.isLockedByMe}
+                              isLoading={lockingSeats.has(seat.seatNumber)}
                             />
                           );
                         })}
@@ -1086,6 +1155,7 @@ export default function SeatSelection() {
                               rowClass={rowClass}
                               isLocked={lockStatus.isLocked}
                               isLockedByMe={lockStatus.isLockedByMe}
+                              isLoading={lockingSeats.has(seat.seatNumber)}
                             />
                           );
                         })}
@@ -1107,6 +1177,7 @@ export default function SeatSelection() {
                               rowClass={rowClass}
                               isLocked={lockStatus.isLocked}
                               isLockedByMe={lockStatus.isLockedByMe}
+                              isLoading={lockingSeats.has(seat.seatNumber)}
                             />
                           );
                         })}
