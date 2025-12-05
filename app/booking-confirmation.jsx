@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Modal,
   ActivityIndicator,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import Animated, {
@@ -108,6 +111,12 @@ export default function BookingConfirmation() {
   const [pointsEarned, setPointsEarned] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds
   const timerRef = useRef(null);
+
+  // Card payment form state
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvv, setCvv] = useState("");
 
   const flight = useMemo(() => {
     try {
@@ -466,6 +475,33 @@ export default function BookingConfirmation() {
   };
 
   async function handlePayment() {
+    // Validate card details
+    if (!cardNumber || cardNumber.replace(/\s/g, "").length < 13) {
+      toast.error({
+        title: "Invalid Card",
+        message: "Please enter a valid card number",
+      });
+      return;
+    }
+    if (!cardName || cardName.trim().length < 3) {
+      toast.error({
+        title: "Invalid Name",
+        message: "Please enter cardholder name",
+      });
+      return;
+    }
+    if (!expiryDate || expiryDate.length !== 5) {
+      toast.error({
+        title: "Invalid Expiry",
+        message: "Please enter expiry date (MM/YY)",
+      });
+      return;
+    }
+    if (!cvv || cvv.length < 3) {
+      toast.error({ title: "Invalid CVV", message: "Please enter CVV" });
+      return;
+    }
+
     setShowPaymentModal(false);
     setProcessing(true);
 
@@ -1009,105 +1045,248 @@ export default function BookingConfirmation() {
             className="flex-1"
             onPress={() => !processing && setShowPaymentModal(false)}
           />
-          <Animated.View
-            entering={FadeInUp.duration(300).easing(Easing.out(Easing.cubic))}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ maxHeight: "95%" }}
           >
-            <View className="bg-background rounded-t-[32px] border-t-2 border-primary/10">
-              <View
-                className="p-6"
-                style={{ paddingBottom: insets.bottom + 24 }}
+            <Animated.View
+              entering={FadeInUp.duration(300).easing(Easing.out(Easing.cubic))}
+              className="bg-background rounded-t-[32px] border-t-2 border-primary/10"
+            >
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                stickyHeaderIndices={[0]}
+                keyboardShouldPersistTaps="handled"
               >
-                {/* Header */}
-                <View className="flex-row items-center justify-between mb-6">
-                  <Text className="text-primary font-urbanist-bold text-xl">
-                    Payment Details
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => !processing && setShowPaymentModal(false)}
-                    disabled={processing}
-                    className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
-                  >
-                    <Ionicons name="close" size={22} color="#541424" />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Payment Summary Card */}
-                <View className="bg-primary/5 rounded-[24px] p-5 mb-6 border border-primary/15">
+                {/* Sticky Header */}
+                <View className="bg-background px-6 py-4 border-b border-primary/10 rounded-t-[32px]">
                   <View className="flex-row items-center justify-between">
-                    <View>
-                      <Text className="text-primary/70 font-urbanist-medium text-sm mb-1">
-                        Amount to Pay
-                      </Text>
-                      <Text className="text-primary font-urbanist-bold text-3xl">
-                        ₹{" "}
-                        {(rewardPointsToUse > 0
-                          ? finalAmount
-                          : pricing.total
-                        ).toLocaleString("en-IN")}
-                      </Text>
-                    </View>
-                    <View className="w-16 h-16 rounded-full bg-primary/10 items-center justify-center">
-                      <Ionicons name="card" size={28} color="#541424" />
-                    </View>
+                    <Text className="text-primary font-urbanist-bold text-xl">
+                      Payment Details
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => !processing && setShowPaymentModal(false)}
+                      disabled={processing}
+                      className="w-10 h-10 rounded-full bg-primary/10 items-center justify-center"
+                    >
+                      <Ionicons name="close" size={22} color="#541424" />
+                    </TouchableOpacity>
                   </View>
-                  {rewardPointsToUse > 0 && (
-                    <View className="flex-row items-center gap-2 mt-4 pt-4 border-t border-primary/10">
-                      <Ionicons name="gift" size={16} color="#10b981" />
-                      <Text className="text-green-700 font-urbanist-semibold text-sm">
-                        {rewardPointsToUse} reward points applied
-                      </Text>
-                    </View>
-                  )}
                 </View>
 
-                {/* Payment Method */}
-                <View className="mb-6">
-                  <Text className="text-primary font-urbanist-bold text-base mb-3">
-                    Payment Method
-                  </Text>
-                  <View className="bg-primary rounded-[24px] p-5 border border-primary/20">
-                    <View className="flex-row items-center gap-4">
-                      <View className="w-14 h-14 rounded-full items-center justify-center bg-text/15">
-                        <Ionicons name="card" size={24} color="#e3d7cb" />
+                {/* Scrollable Content */}
+                <View
+                  className="p-6"
+                  style={{
+                    paddingBottom: insets.bottom + 24,
+                  }}
+                >
+                  {/* Payment Summary Card */}
+                  <View className="bg-primary/5 rounded-[24px] p-5 mb-6 border border-primary/15">
+                    <View className="flex-row items-center justify-between">
+                      <View>
+                        <Text className="text-primary/70 font-urbanist-medium text-sm mb-1">
+                          Amount to Pay
+                        </Text>
+                        <Text className="text-primary font-urbanist-bold text-3xl">
+                          ₹{" "}
+                          {(rewardPointsToUse > 0
+                            ? finalAmount
+                            : pricing.total
+                          ).toLocaleString("en-IN")}
+                        </Text>
                       </View>
+                      <View className="w-16 h-16 rounded-full bg-primary/10 items-center justify-center">
+                        <Ionicons name="card" size={28} color="#541424" />
+                      </View>
+                    </View>
+                    {rewardPointsToUse > 0 && (
+                      <View className="flex-row items-center gap-2 mt-4 pt-4 border-t border-primary/10">
+                        <Ionicons name="gift" size={16} color="#10b981" />
+                        <Text className="text-green-700 font-urbanist-semibold text-sm">
+                          {rewardPointsToUse} reward points applied
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Payment Method */}
+                  <View className="mb-6">
+                    <Text className="text-primary font-urbanist-bold text-base mb-3">
+                      Payment Method
+                    </Text>
+                    <View className="bg-primary rounded-[24px] p-5 border border-primary/20">
+                      <View className="flex-row items-center gap-4">
+                        <View className="w-14 h-14 rounded-full items-center justify-center bg-text/15">
+                          <Ionicons name="card" size={24} color="#e3d7cb" />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-text font-urbanist-bold text-base">
+                            Credit/Debit Card
+                          </Text>
+                          <Text className="text-text/70 font-urbanist-medium text-sm mt-1">
+                            Secure payment gateway
+                          </Text>
+                        </View>
+                        <View className="w-8 h-8 rounded-full bg-green-500 items-center justify-center">
+                          <Ionicons name="checkmark" size={18} color="white" />
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Card Details Form */}
+                  <View className="mb-6">
+                    <Text className="text-primary font-urbanist-bold text-base mb-3">
+                      Card Details
+                    </Text>
+
+                    {/* Card Number */}
+                    <View className="mb-4">
+                      <Text className="text-primary font-urbanist-semibold text-sm mb-2">
+                        Card Number
+                      </Text>
+                      <View className="bg-background border-2 border-primary/20 rounded-[16px] px-4 py-3 flex-row items-center">
+                        <Ionicons
+                          name="card-outline"
+                          size={20}
+                          color="#541424"
+                          style={{ marginRight: 10 }}
+                        />
+                        <TextInput
+                          className="flex-1 text-primary font-urbanist-medium text-base"
+                          placeholder="1234 5678 9012 3456"
+                          placeholderTextColor="rgba(84, 20, 36, 0.4)"
+                          value={cardNumber}
+                          onChangeText={(text) => {
+                            // Format card number with spaces
+                            const cleaned = text.replace(/\s/g, "");
+                            const formatted =
+                              cleaned.match(/.{1,4}/g)?.join(" ") || cleaned;
+                            setCardNumber(formatted.slice(0, 19)); // Max 16 digits + 3 spaces
+                          }}
+                          keyboardType="numeric"
+                          maxLength={19}
+                        />
+                      </View>
+                    </View>
+
+                    {/* Cardholder Name */}
+                    <View className="mb-4">
+                      <Text className="text-primary font-urbanist-semibold text-sm mb-2">
+                        Cardholder Name
+                      </Text>
+                      <View className="bg-background border-2 border-primary/20 rounded-[16px] px-4 py-3 flex-row items-center">
+                        <Ionicons
+                          name="person-outline"
+                          size={20}
+                          color="#541424"
+                          style={{ marginRight: 10 }}
+                        />
+                        <TextInput
+                          className="flex-1 text-primary font-urbanist-medium text-base"
+                          placeholder="JOHN DOE"
+                          placeholderTextColor="rgba(84, 20, 36, 0.4)"
+                          value={cardName}
+                          onChangeText={(text) => {
+                            // Only allow letters and spaces
+                            const cleaned = text.replace(/[^a-zA-Z\s]/g, "");
+                            setCardName(cleaned.toUpperCase());
+                          }}
+                          autoCapitalize="characters"
+                        />
+                      </View>
+                    </View>
+
+                    {/* Expiry Date and CVV */}
+                    <View className="flex-row gap-3">
                       <View className="flex-1">
-                        <Text className="text-text font-urbanist-bold text-base">
-                          Credit/Debit Card
+                        <Text className="text-primary font-urbanist-semibold text-sm mb-2">
+                          Expiry Date
                         </Text>
-                        <Text className="text-text/70 font-urbanist-medium text-sm mt-1">
-                          Secure payment gateway
-                        </Text>
+                        <View className="bg-background border-2 border-primary/20 rounded-[16px] px-4 py-3 flex-row items-center">
+                          <Ionicons
+                            name="calendar-outline"
+                            size={20}
+                            color="#541424"
+                            style={{ marginRight: 10 }}
+                          />
+                          <TextInput
+                            className="flex-1 text-primary font-urbanist-medium text-base"
+                            placeholder="MM/YY"
+                            placeholderTextColor="rgba(84, 20, 36, 0.4)"
+                            value={expiryDate}
+                            onChangeText={(text) => {
+                              // Format as MM/YY
+                              const cleaned = text.replace(/\D/g, "");
+                              if (cleaned.length >= 2) {
+                                setExpiryDate(
+                                  cleaned.slice(0, 2) +
+                                    "/" +
+                                    cleaned.slice(2, 4)
+                                );
+                              } else {
+                                setExpiryDate(cleaned);
+                              }
+                            }}
+                            keyboardType="numeric"
+                            maxLength={5}
+                          />
+                        </View>
                       </View>
-                      <View className="w-8 h-8 rounded-full bg-green-500 items-center justify-center">
-                        <Ionicons name="checkmark" size={18} color="white" />
+
+                      <View className="flex-1">
+                        <Text className="text-primary font-urbanist-semibold text-sm mb-2">
+                          CVV
+                        </Text>
+                        <View className="bg-background border-2 border-primary/20 rounded-[16px] px-4 py-3 flex-row items-center">
+                          <Ionicons
+                            name="lock-closed-outline"
+                            size={20}
+                            color="#541424"
+                            style={{ marginRight: 10 }}
+                          />
+                          <TextInput
+                            className="flex-1 text-primary font-urbanist-medium text-base"
+                            placeholder="123"
+                            placeholderTextColor="rgba(84, 20, 36, 0.4)"
+                            value={cvv}
+                            onChangeText={(text) =>
+                              setCvv(text.replace(/\D/g, "").slice(0, 4))
+                            }
+                            keyboardType="numeric"
+                            maxLength={4}
+                            secureTextEntry
+                          />
+                        </View>
                       </View>
                     </View>
                   </View>
-                </View>
 
-                {/* Confirm Button */}
-                <PrimaryButton
-                  title={
-                    processing
-                      ? "Processing Payment..."
-                      : `Confirm & Pay ₹${(rewardPointsToUse > 0 ? finalAmount : pricing.total).toLocaleString("en-IN")}`
-                  }
-                  onPress={handlePayment}
-                  disabled={processing}
-                  leftIconName={processing ? undefined : "shield-checkmark"}
-                  withHaptics={false}
-                />
+                  {/* Confirm Button */}
+                  <PrimaryButton
+                    title={
+                      processing
+                        ? "Processing Payment..."
+                        : `Confirm & Pay ₹${(rewardPointsToUse > 0 ? finalAmount : pricing.total).toLocaleString("en-IN")}`
+                    }
+                    onPress={handlePayment}
+                    disabled={processing}
+                    leftIconName={processing ? undefined : "shield-checkmark"}
+                    withHaptics={false}
+                  />
 
-                {/* Security Note */}
-                <View className="flex-row items-center justify-center gap-2 mt-5 pt-4 border-t border-primary/10">
-                  <Ionicons name="lock-closed" size={16} color="#541424" />
-                  <Text className="text-primary/70 font-urbanist-semibold text-sm">
-                    Your payment is secure and encrypted
-                  </Text>
+                  {/* Security Note */}
+                  <View className="flex-row items-center justify-center gap-2 mt-5 pt-4 border-t border-primary/10">
+                    <Ionicons name="lock-closed" size={16} color="#541424" />
+                    <Text className="text-primary/70 font-urbanist-semibold text-sm">
+                      Your payment is secure and encrypted
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </View>
-          </Animated.View>
+              </ScrollView>
+            </Animated.View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
