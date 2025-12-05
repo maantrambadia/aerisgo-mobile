@@ -64,6 +64,31 @@ export default function SignIn() {
       // AuthContext will handle redirect to /home
     } catch (e) {
       const msg = e?.message || "Sign in failed";
+      const field = e?.data?.field;
+      const userNotFound = e?.data?.userNotFound;
+
+      // User doesn't exist - redirect to sign-up
+      if (e?.status === 404 && userNotFound) {
+        toast.error({
+          title: "Account not found",
+          message: "No account exists with this email. Please sign up.",
+        });
+        setTimeout(() => {
+          router.push("/sign-up");
+        }, 1500);
+        return;
+      }
+
+      // Incorrect password
+      if (e?.status === 401 && field === "password") {
+        toast.error({
+          title: "Incorrect password",
+          message: "The password you entered is incorrect.",
+        });
+        return;
+      }
+
+      // Email not verified
       if (e?.status === 403) {
         const reason = e?.data?.reason;
         if (reason === "not_verified") {
