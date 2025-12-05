@@ -95,7 +95,7 @@ export default function PassengerDetails() {
   const isRoundTrip = tripType === "roundtrip";
 
   // Calculate time remaining from lockStartTime
-  const [timeRemaining, setTimeRemaining] = useState(600);
+  const [timeRemaining, setTimeRemaining] = useState(1200);
   const timerRef = useRef(null);
 
   // Use correct flight and seats based on trip type
@@ -191,7 +191,7 @@ export default function PassengerDetails() {
     const startTime = parseInt(lockStartTime);
     const updateTimer = () => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const remaining = Math.max(0, 600 - elapsed);
+      const remaining = Math.max(0, 1200 - elapsed);
       setTimeRemaining(remaining);
 
       if (remaining === 0) {

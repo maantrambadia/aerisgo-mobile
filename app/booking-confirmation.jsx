@@ -106,7 +106,7 @@ export default function BookingConfirmation() {
   const [rewardPointsToUse, setRewardPointsToUse] = useState(0);
   const [pricingConfig, setPricingConfig] = useState(null);
   const [pointsEarned, setPointsEarned] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(1200); // 20 minutes in seconds
   const timerRef = useRef(null);
 
   const flight = useMemo(() => {
@@ -242,7 +242,7 @@ export default function BookingConfirmation() {
     const startTime = parseInt(lockStartTime);
     const updateTimer = () => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const remaining = Math.max(0, 600 - elapsed);
+      const remaining = Math.max(0, 1200 - elapsed);
       setTimeRemaining(remaining);
 
       if (remaining === 0) {
