@@ -18,7 +18,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.maantrambadia.aerisgomobile",
-      "softwareKeyboardLayoutMode": "pan",
+      "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
