@@ -39,13 +39,13 @@ function FlyByPlane({
       withTiming(planeOpacityBase, {
         duration: 220,
         easing: Easing.out(Easing.cubic),
-      })
+      }),
     );
     // Ensure each plane ends before splash overlay fades: use per-plane duration
     const d = Math.max(520, durationMs);
     x.value = withDelay(
       delayMs,
-      withTiming(SCREEN_WIDTH + 40, { duration: d, easing: Easing.linear })
+      withTiming(SCREEN_WIDTH + 40, { duration: d, easing: Easing.linear }),
     );
     // Split wobble durations proportionally (approx 39% / 39% / 22%)
     const d1 = Math.round(d * 0.39);
@@ -56,16 +56,16 @@ function FlyByPlane({
       withSequence(
         withTiming(-10, { duration: d1, easing: Easing.inOut(Easing.quad) }),
         withTiming(6, { duration: d2, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: d3, easing: Easing.inOut(Easing.quad) })
-      )
+        withTiming(0, { duration: d3, easing: Easing.inOut(Easing.quad) }),
+      ),
     );
     trailO.value = withDelay(
       delayMs,
       withRepeat(
         withTiming(0.7, { duration: 450, easing: Easing.inOut(Easing.quad) }),
         -1,
-        true
-      )
+        true,
+      ),
     );
   }, [visible]);
 
@@ -105,7 +105,7 @@ function FlyByPlane({
 }
 
 export default function AnimatedSplash({ visible, onFinish }) {
-  const opacity = useSharedValue(0);
+  const opacity = useSharedValue(1);
   const logoScale = useSharedValue(0.92);
   const blob2 = useSharedValue(0);
   const bar = useSharedValue(0);
@@ -143,7 +143,7 @@ export default function AnimatedSplash({ visible, onFinish }) {
     // Logo micro-bounce + breathing
     logoScale.value = withSequence(
       withTiming(1.02, { duration: 380, easing: Easing.out(Easing.cubic) }),
-      withTiming(1.0, { duration: 260, easing: Easing.inOut(Easing.cubic) })
+      withTiming(1.0, { duration: 260, easing: Easing.inOut(Easing.cubic) }),
     );
 
     // Floating blob (single)
@@ -151,8 +151,8 @@ export default function AnimatedSplash({ visible, onFinish }) {
       120,
       withSequence(
         withTiming(-8, { duration: 900, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 900, easing: Easing.inOut(Easing.quad) })
-      )
+        withTiming(0, { duration: 900, easing: Easing.inOut(Easing.quad) }),
+      ),
     );
 
     // (shimmer removed)

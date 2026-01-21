@@ -16,7 +16,8 @@ SplashScreen.preventAutoHideAsync();
 function AppContent() {
   const pathname = usePathname();
   const { isLoading: authLoading } = useAuth();
-  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+  const [animatedSplashFinished, setAnimatedSplashFinished] = useState(false);
+  const [startupComplete, setStartupComplete] = useState(false);
 
   const { showNav, activeKey } = useMemo(() => {
     const map = {
@@ -29,8 +30,12 @@ function AppContent() {
     return { showNav: Boolean(key), activeKey: key };
   }, [pathname]);
 
-  // Keep splash visible until auth check completes
-  const shouldShowSplash = showAnimatedSplash || authLoading;
+  useEffect(() => {
+    if (startupComplete) return;
+    if (animatedSplashFinished && !authLoading) {
+      setStartupComplete(true);
+    }
+  }, [animatedSplashFinished, authLoading, startupComplete]);
 
   return (
     <>
@@ -180,11 +185,12 @@ function AppContent() {
         {/* Global Toasts */}
         <ToastHost />
       </SafeScreen>
-      {/* Animated Splash overlay - stays visible until auth completes */}
-      <AnimatedSplash
-        visible={shouldShowSplash}
-        onFinish={() => setShowAnimatedSplash(false)}
-      />
+      {!startupComplete ? (
+        <AnimatedSplash
+          visible={true}
+          onFinish={() => setAnimatedSplashFinished(true)}
+        />
+      ) : null}
     </>
   );
 }
