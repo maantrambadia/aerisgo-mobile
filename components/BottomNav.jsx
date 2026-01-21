@@ -1,4 +1,4 @@
-import { View, Pressable, Text } from "react-native";
+import { View, Pressable, Text, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
@@ -71,12 +71,12 @@ export default function BottomNav({ active = "home", onPressItem }) {
         iconActive: "person",
       },
     ],
-    []
+    [],
   );
 
   const activeIndex = Math.max(
     0,
-    tabs.findIndex((t) => t.key === active)
+    tabs.findIndex((t) => t.key === active),
   );
 
   const [width, setWidth] = useState(0);
@@ -117,12 +117,18 @@ export default function BottomNav({ active = "home", onPressItem }) {
       }}
     >
       <BlurView
-        intensity={25}
+        intensity={10}
         tint="light"
+        experimentalBlurMethod={
+          Platform.OS === "android" ? "dimezisBlurView" : undefined
+        }
+        reducedTransparencyFallbackColor="rgba(227, 208, 191, 0.92)"
         className="w-11/12 rounded-full border border-primary/10 overflow-hidden"
         style={{
           paddingHorizontal: 6,
           paddingVertical: 6,
+          backgroundColor:
+            Platform.OS === "android" ? "rgba(227, 208, 191, 0.78)" : undefined,
           shadowColor: "#541424",
           shadowOpacity: 0.15,
           shadowRadius: 18,
