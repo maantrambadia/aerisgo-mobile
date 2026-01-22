@@ -7,6 +7,7 @@ import {
   Pressable,
   BackHandler,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import Animated, {
   FadeInDown,
@@ -43,10 +44,10 @@ export default function RewardsScreen() {
       const onBackPress = () => true;
       const sub = BackHandler.addEventListener(
         "hardwareBackPress",
-        onBackPress
+        onBackPress,
       );
       return () => sub.remove();
-    }, [])
+    }, []),
   );
 
   useEffect(() => {
@@ -131,7 +132,11 @@ export default function RewardsScreen() {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "-";
+
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "-";
+
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
@@ -141,7 +146,12 @@ export default function RewardsScreen() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+
+    try {
+      return date.toLocaleDateString();
+    } catch {
+      return "-";
+    }
   };
 
   // Staggered fade-in helper for smooth entry animations
@@ -149,6 +159,26 @@ export default function RewardsScreen() {
     return FadeInUp.delay(index * 50)
       .duration(400)
       .easing(Easing.out(Easing.cubic));
+  };
+
+  const TransactionCard = ({ children }) => {
+    if (Platform.OS === "android") {
+      return (
+        <View className="rounded-[28px] overflow-hidden border border-primary/10 bg-secondary">
+          {children}
+        </View>
+      );
+    }
+
+    return (
+      <BlurView
+        intensity={40}
+        tint="light"
+        className="rounded-[28px] overflow-hidden border border-primary/10"
+      >
+        {children}
+      </BlurView>
+    );
   };
 
   if (loading) {
@@ -264,7 +294,9 @@ export default function RewardsScreen() {
       {/* Transaction History - FlatList for better performance */}
       <FlatList
         data={filteredTransactions}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) =>
+          String(item?._id ?? item?.id ?? item?.transactionId ?? index)
+        }
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -315,23 +347,19 @@ export default function RewardsScreen() {
         onEndReachedThreshold={0.3}
         renderItem={({ item: txn, index }) => (
           <Animated.View entering={staggeredFadeIn(index)}>
-            <BlurView
-              intensity={40}
-              tint="light"
-              className="rounded-[28px] overflow-hidden border border-primary/10"
-            >
-              <View className="p-4 flex-row items-center justify-between bg-secondary">
+            <TransactionCard>
+              <View className="p-4 flex-row items-center justify-between">
                 <View className="flex-row items-center gap-3 flex-1">
                   <View
                     className="h-12 w-12 rounded-full items-center justify-center"
                     style={{
-                      backgroundColor: `${getTransactionColor(txn.type)}15`,
+                      backgroundColor: `${getTransactionColor(txn?.type)}15`,
                     }}
                   >
                     <Ionicons
-                      name={getTransactionIcon(txn.type)}
+                      name={getTransactionIcon(txn?.type)}
                       size={24}
-                      color={getTransactionColor(txn.type)}
+                      color={getTransactionColor(txn?.type)}
                     />
                   </View>
                   <View className="flex-1">
@@ -348,13 +376,13 @@ export default function RewardsScreen() {
                 </View>
                 <Text
                   className="font-urbanist-bold text-lg"
-                  style={{ color: getTransactionColor(txn.type) }}
+                  style={{ color: getTransactionColor(txn?.type) }}
                 >
                   {txn.type === "earn" ? "+" : "-"}
-                  {txn.points}
+                  {txn?.points ?? 0}
                 </Text>
               </View>
-            </BlurView>
+            </TransactionCard>
           </Animated.View>
         )}
       />
