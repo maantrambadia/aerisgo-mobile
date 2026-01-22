@@ -105,6 +105,16 @@ export default function BottomNav({ active = "home", onPressItem }) {
     onPressItem && onPressItem(key);
   };
 
+  const Container = Platform.OS === "android" ? View : BlurView;
+  const containerProps =
+    Platform.OS === "android"
+      ? {}
+      : {
+          intensity: 10,
+          tint: "light",
+          reducedTransparencyFallbackColor: "rgba(227, 208, 191, 0.92)",
+        };
+
   return (
     <View
       pointerEvents="box-none"
@@ -116,24 +126,23 @@ export default function BottomNav({ active = "home", onPressItem }) {
         alignItems: "center",
       }}
     >
-      <BlurView
-        intensity={10}
-        tint="light"
-        experimentalBlurMethod={
-          Platform.OS === "android" ? "dimezisBlurView" : undefined
-        }
-        reducedTransparencyFallbackColor="rgba(227, 208, 191, 0.92)"
+      <Container
+        {...containerProps}
         className="w-11/12 rounded-full border border-primary/10 overflow-hidden"
         style={{
           paddingHorizontal: 6,
           paddingVertical: 6,
-          backgroundColor:
-            Platform.OS === "android" ? "rgba(227, 208, 191, 0.78)" : undefined,
-          shadowColor: "#541424",
-          shadowOpacity: 0.15,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 6 },
-          elevation: 10,
+          backgroundColor: "rgba(227, 208, 191, 0.92)",
+          ...(Platform.OS === "android"
+            ? {
+                elevation: 0,
+              }
+            : {
+                shadowColor: "#541424",
+                shadowOpacity: 0.15,
+                shadowRadius: 18,
+                shadowOffset: { width: 0, height: 6 },
+              }),
         }}
       >
         <View
@@ -158,7 +167,7 @@ export default function BottomNav({ active = "home", onPressItem }) {
             </View>
           ))}
         </View>
-      </BlurView>
+      </Container>
     </View>
   );
 }
